@@ -14,7 +14,10 @@ import (
 var DB *postgres.DbCluster
 
 func InitDB() {
-	_ = godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
 
 	dbConfig := postgres.DBConfig{
 		Host:                   os.Getenv("POSTGRES_HOST"),
