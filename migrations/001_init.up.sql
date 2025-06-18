@@ -25,10 +25,9 @@ CREATE TABLE IF NOT EXISTS skus (
 -- Inventory table
 CREATE TABLE IF NOT EXISTS inventories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    inventory_id UUID NOT NULL,
-    sku_id UUID NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 0,
+    name TEXT NOT NULL,
+    location TEXT,
+    tenant_id UUID NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_inventory_sku FOREIGN KEY (sku_id) REFERENCES skus(id) ON DELETE CASCADE
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );

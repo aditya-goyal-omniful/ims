@@ -9,7 +9,7 @@ import (
 )
 
 func GetSkus(c *gin.Context) {
-	skus, err := models.GetInventories(c)
+	skus, err := models.GetSkus(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

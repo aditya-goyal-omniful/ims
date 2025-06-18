@@ -10,7 +10,7 @@ import (
 type Sku struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
 	Name      string    `gorm:"not null" json:"name"`
-	SkuCode   string    `gorm:"unique;not null" json:"Sku_code"`
+	SkuCode   string    `gorm:"unique;not null" json:"sku_code"`
 	SellerID  uuid.UUID `gorm:"not null" json:"seller_id"`
 	TenantID  uuid.UUID `gorm:"not null" json:"tenant_id"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
