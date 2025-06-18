@@ -19,7 +19,7 @@ type Sku struct {
 
 func GetSkus(ctx context.Context) ([]Sku, error) {
 	var skus []Sku
-	if err := db.GetMasterDB(ctx).Find(&skus).Error; err != nil {
+	if err := getDB(ctx).Find(&skus).Error; err != nil {
 		return nil, err
 	}
 	return skus, nil
@@ -27,14 +27,14 @@ func GetSkus(ctx context.Context) ([]Sku, error) {
 
 func GetSku(ctx context.Context, id uuid.UUID) (*Sku, error) {
 	var sku Sku
-	if err := db.GetMasterDB(ctx).First(&sku, "id = ?", id).Error; err != nil {
+	if err := getDB(ctx).First(&sku, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &sku, nil
 }
 
 func CreateSku(ctx context.Context, sku *Sku) error {
-	if err := db.GetMasterDB(ctx).Create(sku).Error; err != nil {
+	if err := getDB(ctx).Create(sku).Error; err != nil {
 		return err
 	}
 	return nil
@@ -42,11 +42,11 @@ func CreateSku(ctx context.Context, sku *Sku) error {
 
 func DeleteSku(ctx context.Context, id uuid.UUID) (Sku, error) {
 	var sku Sku
-	if err := db.GetMasterDB(ctx).First(&sku, "id = ?", id).Error; err != nil {
+	if err := getDB(ctx).First(&sku, "id = ?", id).Error; err != nil {
 		return Sku{}, err
 	}
 
-	if err := db.GetMasterDB(ctx).Delete(&sku).Error; err != nil {
+	if err := getDB(ctx).Delete(&sku).Error; err != nil {
 		return sku, err
 	}
 
@@ -54,5 +54,5 @@ func DeleteSku(ctx context.Context, id uuid.UUID) (Sku, error) {
 }
 
 func UpdateSku(ctx context.Context, id uuid.UUID, updated *Sku) error {
-	return db.GetMasterDB(ctx).Model(&Sku{}).Where("id = ?", id).Updates(updated).Error
+	return getDB(ctx).Model(&Sku{}).Where("id = ?", id).Updates(updated).Error
 }

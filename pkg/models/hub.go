@@ -6,7 +6,7 @@ import (
 
 	"github.com/aditya-goyal-omniful/ims/pkg/config"
 	"github.com/google/uuid"
-	"github.com/omniful/go_commons/db/sql/postgres"
+	"gorm.io/gorm"
 )
 
 type Hub struct {
@@ -18,11 +18,13 @@ type Hub struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-var db *postgres.DbCluster = config.DB
+func getDB(ctx context.Context) *gorm.DB {
+	return config.GetDB().GetMasterDB(ctx)
+}
 
 func GetHubs(ctx context.Context) ([]Hub, error) {
 	var hubs []Hub
-	if err := db.GetMasterDB(ctx).Find(&hubs).Error; err != nil {
+	if err := getDB(ctx).Find(&hubs).Error; err != nil {
 		return nil, err
 	}
 	return hubs, nil
@@ -30,14 +32,14 @@ func GetHubs(ctx context.Context) ([]Hub, error) {
 
 func GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
 	var hub Hub
-	if err := db.GetMasterDB(ctx).First(&hub, "id = ?", id).Error; err != nil {
+	if err := getDB(ctx).First(&hub, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &hub, nil
 }
 
 func CreateHub(ctx context.Context, hub *Hub) error {
-	if err := db.GetMasterDB(ctx).Create(hub).Error; err != nil {
+	if err := getDB(ctx).Create(hub).Error; err != nil {
 		return err
 	}
 	return nil
@@ -45,11 +47,11 @@ func CreateHub(ctx context.Context, hub *Hub) error {
 
 func DeleteHub(ctx context.Context, id uuid.UUID) (Hub, error) {
 	var hub Hub
-	if err := db.GetMasterDB(ctx).First(&hub, "id = ?", id).Error; err != nil {
+	if err := getDB(ctx).First(&hub, "id = ?", id).Error; err != nil {
 		return Hub{}, err
 	}
 
-	if err := db.GetMasterDB(ctx).Delete(&hub).Error; err != nil {
+	if err := getDB(ctx).Delete(&hub).Error; err != nil {
 		return Hub{}, err
 	}
 
@@ -57,5 +59,5 @@ func DeleteHub(ctx context.Context, id uuid.UUID) (Hub, error) {
 }
 
 func UpdateHub(ctx context.Context, id uuid.UUID, updated *Hub) error {
-	return db.GetMasterDB(ctx).Model(&Hub{}).Where("id = ?", id).Updates(updated).Error
+	return getDB(ctx).Model(&Hub{}).Where("id = ?", id).Updates(updated).Error
 }

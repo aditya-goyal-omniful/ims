@@ -18,7 +18,7 @@ type Inventory struct {
 
 func GetInventories(ctx context.Context) ([]Inventory, error) {
 	var inventories []Inventory
-	if err := db.GetMasterDB(ctx).Find(&inventories).Error; err != nil {
+	if err := getDB(ctx).Find(&inventories).Error; err != nil {
 		return nil, err
 	}
 	return inventories, nil
@@ -26,14 +26,14 @@ func GetInventories(ctx context.Context) ([]Inventory, error) {
 
 func GetInventory(ctx context.Context, id uuid.UUID) (*Inventory, error) {
 	var inventory Inventory
-	if err := db.GetMasterDB(ctx).First(&inventory, "id = ?", id).Error; err != nil {
+	if err := getDB(ctx).First(&inventory, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &inventory, nil
 }
 
 func CreateInventory(ctx context.Context, inventory *Inventory) error {
-	if err := db.GetMasterDB(ctx).Create(inventory).Error; err != nil {
+	if err := getDB(ctx).Create(inventory).Error; err != nil {
 		return err
 	}
 	return nil
@@ -41,11 +41,11 @@ func CreateInventory(ctx context.Context, inventory *Inventory) error {
 
 func DeleteInventory(ctx context.Context, id uuid.UUID) (Inventory, error) {
 	var inventory Inventory
-	if err := db.GetMasterDB(ctx).First(&inventory, "id = ?", id).Error; err != nil {
+	if err := getDB(ctx).First(&inventory, "id = ?", id).Error; err != nil {
 		return Inventory{}, err
 	}
 
-	if err := db.GetMasterDB(ctx).Delete(&inventory).Error; err != nil {
+	if err := getDB(ctx).Delete(&inventory).Error; err != nil {
 		return inventory, err
 	}
 
@@ -53,5 +53,5 @@ func DeleteInventory(ctx context.Context, id uuid.UUID) (Inventory, error) {
 }
 
 func UpdateInventory(ctx context.Context, id uuid.UUID, updated *Inventory) error {
-	return db.GetMasterDB(ctx).Model(&Inventory{}).Where("id = ?", id).Updates(updated).Error
+	return getDB(ctx).Model(&Inventory{}).Where("id = ?", id).Updates(updated).Error
 }
