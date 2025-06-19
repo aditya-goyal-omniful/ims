@@ -47,6 +47,17 @@ func CreateInventory(c *gin.Context) {
 		return
 	}
 
+	// Extract tenant_id from header and assign to hub
+	tenantIDStr := c.GetHeader("X-Tenant-ID")
+	if tenantIDStr != "" {
+		tenantID, err := uuid.Parse(tenantIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant_id in header"})
+			return
+		}
+		inventory.TenantID = tenantID
+	}
+
 	if err := models.CreateInventory(c, &inventory); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})

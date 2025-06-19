@@ -47,6 +47,28 @@ func CreateSku(c *gin.Context) {
 		return
 	}
 
+	// Extract tenant_id from header and assign to hub
+	tenantIDStr := c.GetHeader("X-Tenant-ID")
+	if tenantIDStr != "" {
+		tenantID, err := uuid.Parse(tenantIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant_id in header"})
+			return
+		}
+		sku.TenantID = tenantID
+	}
+
+	// Extract seller_id from header and assign to hub
+	sellerIDStr := c.GetHeader("X-Seller-ID")
+	if sellerIDStr != "" {
+		sellerID, err := uuid.Parse(sellerIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid seller_id in header"})
+			return
+		}
+		sku.SellerID = sellerID
+	}
+
 	if err := models.CreateSku(c, &sku); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant or Seller not found"})
