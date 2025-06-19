@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS inventories (
     quantity INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (tenant_id, hub_id, sku_id),
+    UNIQUE (hub_id, sku_id),
     FOREIGN KEY (tenant_id) REFERENCES tenants(id),
     FOREIGN KEY (hub_id) REFERENCES hubs(id),
     FOREIGN KEY (sku_id) REFERENCES skus(id)

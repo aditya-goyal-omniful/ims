@@ -124,3 +124,34 @@ func UpdateInventory(c *gin.Context) {
 	updated, _ := models.GetInventory(c, id)
 	c.JSON(http.StatusOK, updated)
 }
+
+func UpsertInventory(c *gin.Context) {
+	var inventory models.Inventory
+
+	err := c.Bind(&inventory)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	// Extract tenant ID from header
+	tenantIDStr := c.GetHeader("X-Tenant-ID")
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant_id in header"})
+		return
+	}
+	inventory.TenantID = tenantID
+
+	// Call the upsert logic
+	if err := models.UpsertInventory(c, &inventory); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upsert inventory"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Inventory upserted", "inventory": inventory})
+}

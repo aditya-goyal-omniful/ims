@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm/clause"
 )
 
 type Inventory struct {
@@ -61,4 +62,19 @@ func DeleteInventory(ctx context.Context, id uuid.UUID) (Inventory, error) {
 
 func UpdateInventory(ctx context.Context, id uuid.UUID, updated *Inventory) error {
 	return getDB(ctx).Model(&Inventory{}).Where("id = ?", id).Updates(updated).Error
+}
+
+func UpsertInventory(ctx context.Context, inventory *Inventory) error {
+	// Validate tenant exists
+	if _, err := GetTenant(ctx, inventory.TenantID); err != nil {
+		return err
+	}
+
+	db := getDB(ctx)
+
+	// Atomic UPSERT: (sku_id, hub_id) must be unique for this to work properly
+	return db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "sku_id"}, {Name: "hub_id"}}, // conflict target
+		DoUpdates: clause.AssignmentColumns([]string{"quantity", "updated_at"}),
+	}).Create(inventory).Error
 }

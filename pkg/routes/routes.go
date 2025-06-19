@@ -3,10 +3,10 @@ package routes
 import (
 	"github.com/aditya-goyal-omniful/ims/pkg/controllers"
 	"github.com/aditya-goyal-omniful/ims/pkg/middlewares"
-	commonHttp "github.com/omniful/go_commons/http"
+	"github.com/omniful/go_commons/http"
 )
 
-func SetupRoutes(server *commonHttp.Server) {
+func SetupRoutes(server *http.Server) {
 	// Tenant Routes
 	server.GET("tenants", controllers.GetTenants)
 	server.GET("tenants/:id", controllers.GetTenantByID)
@@ -43,5 +43,6 @@ func SetupRoutes(server *commonHttp.Server) {
 		GET("/:id", controllers.GetInventoryByID).
 		POST("", controllers.CreateInventory).
 		DELETE("/:id", controllers.DeleteInventory).
-		PUT("/:id", controllers.UpdateInventory)
+		PUT("/:id", controllers.UpdateInventory).
+		POST("/upsert", controllers.UpsertInventory)
 }
