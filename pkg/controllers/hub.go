@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func GetHubs(c *gin.Context) {
@@ -45,9 +47,12 @@ func CreateHub(c *gin.Context) {
 		return
 	}
 
-	err = models.CreateHub(c, &hub)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := models.CreateHub(c, &hub); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create hub"})
 		return
 	}
 
@@ -85,6 +90,15 @@ func UpdateHub(c *gin.Context) {
 	err = c.Bind(&hub)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	if _, err := models.GetTenant(c, hub.TenantID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate tenant"})
 		return
 	}
 

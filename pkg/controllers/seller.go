@@ -10,90 +10,90 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetSkus(c *gin.Context) {
-	skus, err := models.GetSkus(c)
+func GetSellers(c *gin.Context) {
+	sellers, err := models.GetSellers(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, skus)
+	c.JSON(http.StatusOK, sellers)
 }
 
-func GetSkuByID(c *gin.Context) {
+func GetSellerByID(c *gin.Context) {
 	idStr := c.Param("id")
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Sku ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Seller ID"})
 		return
 	}
 
-	Sku, err := models.GetSku(c, id)
+	Seller, err := models.GetSeller(c, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, Sku)
+	c.JSON(http.StatusOK, Seller)
 }
 
-func CreateSku(c *gin.Context) {
-	var sku models.Sku
+func CreateSeller(c *gin.Context) {
+	var seller models.Seller
 
-	err := c.Bind(&sku)
+	err := c.Bind(&seller)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	if err := models.CreateSku(c, &sku); err != nil {
+	if err := models.CreateSeller(c, &seller); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant or Seller not found"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create sku"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create seller"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, sku)
+	c.JSON(http.StatusCreated, seller)
 }
 
-func DeleteSku(c *gin.Context) {
+func DeleteSeller(c *gin.Context) {
 	idStr := c.Param("id")
 	
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Sku ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Seller ID"})
 		return
 	}
 
-	sku, err := models.DeleteSku(c, id)
+	seller, err := models.DeleteSeller(c, id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Sku not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Seller not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, sku)
+	c.JSON(http.StatusOK, seller)
 }
 
-func UpdateSku(c *gin.Context) {
+func UpdateSeller(c *gin.Context) {
 	idStr := c.Param("id")
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Sku ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Seller ID"})
 		return
 	}
 
-	var sku models.Sku
-	err = c.Bind(&sku)
+	var seller models.Seller
+	err = c.Bind(&seller)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	if _, err := models.GetTenant(c, sku.TenantID); err != nil {
+	if _, err := models.GetTenant(c, seller.TenantID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
 			return
@@ -102,12 +102,12 @@ func UpdateSku(c *gin.Context) {
 		return
 	}
 
-	err = models.UpdateSku(c, id, &sku)
+	err = models.UpdateSeller(c, id, &seller)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	updated, _ := models.GetSku(c, id)
+	updated, _ := models.GetSeller(c, id)
 	c.JSON(http.StatusOK, updated)
 }

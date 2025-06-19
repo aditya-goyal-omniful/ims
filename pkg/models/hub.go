@@ -39,6 +39,12 @@ func GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
 }
 
 func CreateHub(ctx context.Context, hub *Hub) error {
+	// Check if tenant exists before creating hub
+	_, err := GetTenant(ctx, hub.TenantID)
+	if err != nil {
+		return err // This will be a gorm.ErrRecordNotFound if tenant doesn't exist
+	}
+
 	if err := getDB(ctx).Create(hub).Error; err != nil {
 		return err
 	}

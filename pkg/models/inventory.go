@@ -9,9 +9,10 @@ import (
 
 type Inventory struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
-	Name      string    `gorm:"not null" json:"name"`
-	Location  string    `json:"location"`
-	TenantID  uuid.UUID `gorm:"not null" json:"tenant_id"`
+	TenantID  uuid.UUID `gorm:"type:uuid;not null" json:"tenant_id"`
+	HubID     uuid.UUID `gorm:"type:uuid;not null" json:"hub_id"`
+	SkuID     uuid.UUID `gorm:"type:uuid;not null" json:"sku_id"`
+	Quantity  int       `gorm:"not null" json:"quantity"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
@@ -33,6 +34,12 @@ func GetInventory(ctx context.Context, id uuid.UUID) (*Inventory, error) {
 }
 
 func CreateInventory(ctx context.Context, inventory *Inventory) error {
+	// Check if tenant exists before creating inventory
+	_, err := GetTenant(ctx, inventory.TenantID)
+	if err != nil {
+		return err // This will be a gorm.ErrRecordNotFound if tenant doesn't exist
+	}
+
 	if err := getDB(ctx).Create(inventory).Error; err != nil {
 		return err
 	}

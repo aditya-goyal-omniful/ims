@@ -34,6 +34,18 @@ func GetSku(ctx context.Context, id uuid.UUID) (*Sku, error) {
 }
 
 func CreateSku(ctx context.Context, sku *Sku) error {
+	// Check if tenant exists before creating sku
+	_, err := GetTenant(ctx, sku.TenantID)
+	if err != nil {
+		return err // This will be a gorm.ErrRecordNotFound if tenant doesn't exist
+	}
+
+	// Check if seller exists before creating sku
+	_, err = GetSeller(ctx, sku.SellerID)
+	if err != nil {
+		return err // This will be a gorm.ErrRecordNotFound if seller doesn't exist
+	}
+
 	if err := getDB(ctx).Create(sku).Error; err != nil {
 		return err
 	}

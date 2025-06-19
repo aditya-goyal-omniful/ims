@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func GetInventories(c *gin.Context) {
@@ -27,31 +29,34 @@ func GetInventoryByID(c *gin.Context) {
 		return
 	}
 
-	Inventory, err := models.GetInventory(c, id)
+	inventory, err := models.GetInventory(c, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, Inventory)
+	c.JSON(http.StatusOK, inventory)
 }
 
 func CreateInventory(c *gin.Context) {
-	var Inventory models.Inventory
+	var inventory models.Inventory
 
-	err := c.Bind(&Inventory)
+	err := c.Bind(&inventory)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	err = models.CreateInventory(c, &Inventory)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := models.CreateInventory(c, &inventory); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create inventory"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, Inventory)
+	c.JSON(http.StatusCreated, inventory)
 }
 
 func DeleteInventory(c *gin.Context) {
@@ -63,13 +68,13 @@ func DeleteInventory(c *gin.Context) {
 		return
 	}
 
-	Inventory, err := models.DeleteInventory(c, id)
+	inventory, err := models.DeleteInventory(c, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, Inventory)
+	c.JSON(http.StatusOK, inventory)
 }
 
 func UpdateInventory(c *gin.Context) {
@@ -81,14 +86,23 @@ func UpdateInventory(c *gin.Context) {
 		return
 	}
 
-	var Inventory models.Inventory
-	err = c.Bind(&Inventory)
+	var inventory models.Inventory
+	err = c.Bind(&inventory)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	err = models.UpdateInventory(c, id, &Inventory)
+	if _, err := models.GetTenant(c, inventory.TenantID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate tenant"})
+		return
+	}
+
+	err = models.UpdateInventory(c, id, &inventory)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

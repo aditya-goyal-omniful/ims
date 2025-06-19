@@ -2,28 +2,32 @@ package routes
 
 import (
 	"github.com/aditya-goyal-omniful/ims/pkg/controllers"
+	"github.com/aditya-goyal-omniful/ims/pkg/middlewares"
 	commonHttp "github.com/omniful/go_commons/http"
 )
 
 func SetupRoutes(server *commonHttp.Server) {
 	// Hub routes
-	server.GET("/hubs", controllers.GetHubs)
-	server.GET("/hubs/:id", controllers.GetHubByID)
-	server.POST("/hubs", controllers.CreateHub)
-	server.DELETE("/hubs/:id", controllers.DeleteHub)
-	server.PUT("/hubs/:id", controllers.UpdateHub)
+	server.Group("/hubs", middlewares.AuthMiddleware(false)).
+		GET("", controllers.GetHubs).
+		GET("/:id", controllers.GetHubByID).
+		POST("", controllers.CreateHub).
+		DELETE("/:id", controllers.DeleteHub).
+		PUT("/:id", controllers.UpdateHub)
 
-	// SKU routes
-	server.GET("/skus", controllers.GetSkus)
-	server.GET("/skus/:id", controllers.GetSkuByID)
-	server.POST("/skus", controllers.CreateSku)
-	server.DELETE("/skus/:id", controllers.DeleteSku)
-	server.PUT("/skus/:id", controllers.UpdateSku)
+	// SKU routes (Tenant + Seller)
+	server.Group("/skus", middlewares.AuthMiddleware(true)).
+		GET("", controllers.GetSkus).
+		GET("/:id", controllers.GetSkuByID).
+		POST("", controllers.CreateSku).
+		DELETE("/:id", controllers.DeleteSku).
+		PUT("/:id", controllers.UpdateSku)
 
 	// Inventory routes
-	server.GET("/inventories", controllers.GetInventories)
-	server.GET("/inventories/:id", controllers.GetInventoryByID)
-	server.POST("/inventories", controllers.CreateInventory)
-	server.DELETE("/inventories/:id", controllers.DeleteInventory)
-	server.PUT("/inventories/:id", controllers.UpdateInventory)
+	server.Group("/inventories", middlewares.AuthMiddleware(false)).
+		GET("", controllers.GetInventories).
+		GET("/:id", controllers.GetInventoryByID).
+		POST("", controllers.CreateInventory).
+		DELETE("/:id", controllers.DeleteInventory).
+		PUT("/:id", controllers.UpdateInventory)
 }
