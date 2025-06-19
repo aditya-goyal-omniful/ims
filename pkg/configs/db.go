@@ -1,30 +1,25 @@
-package config
+package configs
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
-	"github.com/joho/godotenv"
+	"github.com/omniful/go_commons/config"
 	"github.com/omniful/go_commons/db/sql/migration"
 	"github.com/omniful/go_commons/db/sql/postgres"
 )
 
 var DB *postgres.DbCluster
 
-func InitDB() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
-
+func InitDB(ctx context.Context) {
 	dbConfig := postgres.DBConfig{
-		Host:                   os.Getenv("POSTGRES_HOST"),
-		Port:                   os.Getenv("POSTGRES_PORT"),
-		Username:               os.Getenv("POSTGRES_USER"),
-		Password:               os.Getenv("POSTGRES_PASSWORD"),
-		Dbname:                 os.Getenv("POSTGRES_DB"),
+		Host:                   config.GetString(ctx, "postgres.host"),
+		Port:                   config.GetString(ctx, "postgres.port"),
+		Username:               config.GetString(ctx, "postgres.user"),
+		Password:               config.GetString(ctx, "postgres.password"),
+		Dbname:                 config.GetString(ctx, "postgres.name"),
 		MaxOpenConnections:     10,
 		MaxIdleConnections:     5,
 		ConnMaxLifetime:        30 * time.Minute,
@@ -33,12 +28,18 @@ func InitDB() {
 		SkipDefaultTransaction: true,
 	}
 
-	slaves := []postgres.DBConfig{} // No read replicas for now
+	slaves := []postgres.DBConfig{}
 
 	DB = postgres.InitializeDBInstance(dbConfig, &slaves)
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		dbConfig.Username, dbConfig.Password, dbConfig.Host, dbConfig.Port, dbConfig.Dbname)
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		dbConfig.Username,
+		dbConfig.Password,
+		dbConfig.Host,
+		dbConfig.Port,
+		dbConfig.Dbname,
+	)
 
 	migrator, err := migration.InitializeMigrate("file://migrations", dsn)
 	if err != nil {

@@ -3,29 +3,42 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
-	"github.com/aditya-goyal-omniful/ims/pkg/config"
+	localConfig "github.com/aditya-goyal-omniful/ims/pkg/configs"
 	"github.com/aditya-goyal-omniful/ims/pkg/routes"
+	"github.com/omniful/go_commons/config"
 	"github.com/omniful/go_commons/http"
 )
 
 func main() {
-	config.InitDB()
+	// Initialize configuration from CONFIG_SOURCE
+	if err := config.Init(15 * time.Second); err != nil {
+		log.Fatalf("Failed to initialize config: %v", err)
+	}
 
-	port := os.Getenv("PORT")
+	ctx, err := config.TODOContext()
+	if err != nil {
+		log.Fatalf("Failed to get config context: %v", err)
+	}
+
+	port := config.GetString(ctx, "server.port")
 	if port == "" {
 		port = "8087"
 	}
 
+	localConfig.InitDB(ctx)
+
+	// Initialize HTTP server
 	server := http.InitializeServer(
 		":"+port,
-		10*time.Second,  // Read timeout
-		10*time.Second,  // Write timeout
-		70*time.Second,  // Idle timeout
+		10*time.Second,
+		10*time.Second,
+		70*time.Second,
 		false,
 	)
+
+	server.Use(config.Middleware())
 
 	routes.SetupRoutes(server)
 

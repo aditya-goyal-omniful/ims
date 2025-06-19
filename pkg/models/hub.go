@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/aditya-goyal-omniful/ims/pkg/config"
+	"github.com/aditya-goyal-omniful/ims/pkg/configs"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -19,7 +19,7 @@ type Hub struct {
 }
 
 func getDB(ctx context.Context) *gorm.DB {
-	return config.GetDB().GetMasterDB(ctx)
+	return configs.GetDB().GetMasterDB(ctx)
 }
 
 func GetHubs(ctx context.Context) ([]Hub, error) {
