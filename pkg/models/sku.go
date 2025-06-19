@@ -68,3 +68,23 @@ func DeleteSku(ctx context.Context, id uuid.UUID) (Sku, error) {
 func UpdateSku(ctx context.Context, id uuid.UUID, updated *Sku) error {
 	return getDB(ctx).Model(&Sku{}).Where("id = ?", id).Updates(updated).Error
 }
+
+func GetFilteredSkus(ctx context.Context, tenantID uuid.UUID, sellerID uuid.UUID, skuCodes []string) ([]Sku, error) {
+	db := getDB(ctx)
+	query := db.Model(&Sku{}).Where("tenant_id = ?", tenantID)
+
+	if sellerID != uuid.Nil {
+		query = query.Where("seller_id = ?", sellerID)
+	}
+
+	if len(skuCodes) > 0 {
+		query = query.Where("sku_code IN ?", skuCodes)
+	}
+
+	var skus []Sku
+	if err := query.Find(&skus).Error; err != nil {
+		return nil, err
+	}
+
+	return skus, nil
+}

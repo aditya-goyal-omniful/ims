@@ -11,7 +11,33 @@ import (
 )
 
 func GetSkus(c *gin.Context) {
-	skus, err := models.GetSkus(c)
+	// Extract tenant ID from auth headers
+	tenantIDStr := c.GetHeader("X-Tenant-ID")
+	if tenantIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing X-Tenant-ID header"})
+		return
+	}
+
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant_id in header"})
+		return
+	}
+
+	// Optional filters
+	sellerIDStr := c.Query("seller_id")
+	skuCodes := c.QueryArray("sku_codes") // Supports ?sku_codes=abc&sku_codes=def
+
+	var sellerID uuid.UUID
+	if sellerIDStr != "" {
+		sellerID, err = uuid.Parse(sellerIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid seller_id"})
+			return
+		}
+	}
+
+	skus, err := models.GetFilteredSkus(c, tenantID, sellerID, skuCodes)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -56,17 +82,6 @@ func CreateSku(c *gin.Context) {
 			return
 		}
 		sku.TenantID = tenantID
-	}
-
-	// Extract seller_id from header and assign to hub
-	sellerIDStr := c.GetHeader("X-Seller-ID")
-	if sellerIDStr != "" {
-		sellerID, err := uuid.Parse(sellerIDStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid seller_id in header"})
-			return
-		}
-		sku.SellerID = sellerID
 	}
 
 	if err := models.CreateSku(c, &sku); err != nil {

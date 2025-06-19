@@ -22,7 +22,7 @@ func SetupRoutes(server *commonHttp.Server) {
 	server.PUT("sellers/:id", controllers.UpdateSeller)
 
 	// Hub routes
-	server.Group("/hubs", middlewares.AuthMiddleware(false)).
+	server.Group("/hubs", middlewares.AuthMiddleware()).
 		GET("", controllers.GetHubs).
 		GET("/:id", controllers.GetHubByID).
 		POST("", controllers.CreateHub).
@@ -30,7 +30,7 @@ func SetupRoutes(server *commonHttp.Server) {
 		PUT("/:id", controllers.UpdateHub)
 
 	// SKU routes (Tenant + Seller)
-	server.Group("/skus", middlewares.AuthMiddleware(true)).
+	server.Group("/skus", middlewares.AuthMiddleware()).
 		GET("", controllers.GetSkus).
 		GET("/:id", controllers.GetSkuByID).
 		POST("", controllers.CreateSku).
@@ -38,7 +38,7 @@ func SetupRoutes(server *commonHttp.Server) {
 		PUT("/:id", controllers.UpdateSku)
 
 	// Inventory routes
-	server.Group("/inventories", middlewares.AuthMiddleware(false)).
+	server.Group("/inventories", middlewares.AuthMiddleware()).
 		GET("", controllers.GetInventories).
 		GET("/:id", controllers.GetInventoryByID).
 		POST("", controllers.CreateInventory).
