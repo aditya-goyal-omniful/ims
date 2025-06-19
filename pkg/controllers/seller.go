@@ -92,14 +92,16 @@ func UpdateSeller(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-
-	if _, err := models.GetTenant(c, seller.TenantID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+	
+	if seller.TenantID != uuid.Nil {
+		if _, err := models.GetTenant(c, seller.TenantID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate tenant"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate tenant"})
-		return
 	}
 
 	err = models.UpdateSeller(c, id, &seller)

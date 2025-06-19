@@ -93,13 +93,15 @@ func UpdateSku(c *gin.Context) {
 		return
 	}
 
-	if _, err := models.GetTenant(c, sku.TenantID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+	if sku.TenantID != uuid.Nil {
+		if _, err := models.GetTenant(c, sku.TenantID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate tenant"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate tenant"})
-		return
 	}
 
 	err = models.UpdateSku(c, id, &sku)
