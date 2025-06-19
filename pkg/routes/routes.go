@@ -44,5 +44,7 @@ func SetupRoutes(server *http.Server) {
 		POST("", controllers.CreateInventory).
 		DELETE("/:id", controllers.DeleteInventory).
 		PUT("/:id", controllers.UpdateInventory).
-		POST("/upsert", controllers.UpsertInventory)
+		POST("/upsert", controllers.UpsertInventory).
+		GET("/view", controllers.ViewInventoryWithDefaults)
+
 }

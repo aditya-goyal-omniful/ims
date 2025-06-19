@@ -18,6 +18,13 @@ type Inventory struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
+type InventoryView struct {
+	SkuID    uuid.UUID `json:"sku_id"`
+	SkuCode  string    `json:"sku_code"`
+	SkuName  string    `json:"sku_name"`
+	Quantity int       `json:"quantity"`
+}
+
 func GetInventories(ctx context.Context) ([]Inventory, error) {
 	var inventories []Inventory
 	if err := getDB(ctx).Find(&inventories).Error; err != nil {
@@ -77,4 +84,23 @@ func UpsertInventory(ctx context.Context, inventory *Inventory) error {
 		Columns:   []clause.Column{{Name: "sku_id"}, {Name: "hub_id"}}, // conflict target
 		DoUpdates: clause.AssignmentColumns([]string{"quantity", "updated_at"}),
 	}).Create(inventory).Error
+}
+
+func GetInventoryWithDefaults(ctx context.Context, tenantID, hubID uuid.UUID) ([]InventoryView, error) {
+	var result []InventoryView
+	db := getDB(ctx)
+
+	err := db.Raw(`
+		SELECT 
+			s.id AS sku_id,
+			s.sku_code,
+			s.name AS sku_name,
+			COALESCE(i.quantity, 0) AS quantity
+		FROM skus s
+		LEFT JOIN inventories i 
+			ON s.id = i.sku_id AND i.hub_id = ? AND i.tenant_id = s.tenant_id
+		WHERE s.tenant_id = ?
+	`, hubID, tenantID).Scan(&result).Error
+
+	return result, err
 }

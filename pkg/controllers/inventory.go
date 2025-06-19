@@ -155,3 +155,33 @@ func UpsertInventory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Inventory upserted", "inventory": inventory})
 }
+
+func ViewInventoryWithDefaults(c *gin.Context) {
+	tenantIDStr := c.GetHeader("X-Tenant-ID")
+	hubIDStr := c.Query("hub_id")
+
+	if tenantIDStr == "" || hubIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing tenant_id header or hub_id query param"})
+		return
+	}
+
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant_id"})
+		return
+	}
+
+	hubID, err := uuid.Parse(hubIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hub_id"})
+		return
+	}
+
+	view, err := models.GetInventoryWithDefaults(c, tenantID, hubID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, view)
+}
