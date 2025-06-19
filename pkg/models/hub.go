@@ -2,9 +2,12 @@ package models
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/aditya-goyal-omniful/ims/pkg/configs"
+	"github.com/aditya-goyal-omniful/ims/pkg/constants"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -31,10 +34,31 @@ func GetHubs(ctx context.Context) ([]Hub, error) {
 }
 
 func GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
+	cacheKey := fmt.Sprintf("hub:%s", id)
+
+	// Try to get from cache
+	if cached, err := configs.RedisClient.Get(ctx, cacheKey); err == nil && cached != "" {
+		var hub Hub
+		if err := json.Unmarshal([]byte(cached), &hub); err == nil {
+			fmt.Println("Redis cache hit for hub:", id)
+			return &hub, nil
+		}
+	}
+	
+	// Fallback to DB
 	var hub Hub
 	if err := getDB(ctx).First(&hub, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
+
+	// Store in cache
+	if bytes, err := json.Marshal(hub); err == nil {
+		_, err := configs.RedisClient.Set(ctx, cacheKey, string(bytes), constants.SkuCacheTTL)
+		if err != nil {
+			fmt.Println("Failed to set cache:", err)
+		}
+	}
+
 	return &hub, nil
 }
 
@@ -61,9 +85,17 @@ func DeleteHub(ctx context.Context, id uuid.UUID) (Hub, error) {
 		return Hub{}, err
 	}
 
+	// Invalidate cache
+	_, _ = configs.RedisClient.Del(ctx, fmt.Sprintf("hub:%s", id))
+
 	return hub, nil
 }
 
 func UpdateHub(ctx context.Context, id uuid.UUID, updated *Hub) error {
-	return getDB(ctx).Model(&Hub{}).Where("id = ?", id).Updates(updated).Error
+	err := getDB(ctx).Model(&Hub{}).Where("id = ?", id).Updates(updated).Error
+
+	// Invalidate cache
+	_, _ = configs.RedisClient.Del(ctx, fmt.Sprintf("hub:%s", id))
+
+	return err
 }

@@ -2,8 +2,12 @@ package models
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/aditya-goyal-omniful/ims/pkg/configs"
+	"github.com/aditya-goyal-omniful/ims/pkg/constants"
 	"github.com/google/uuid"
 )
 
@@ -26,10 +30,28 @@ func GetSkus(ctx context.Context) ([]Sku, error) {
 }
 
 func GetSku(ctx context.Context, id uuid.UUID) (*Sku, error) {
+	cacheKey := fmt.Sprintf("sku:%s", id)
+
+	// Try to get from cache
+	if cached, err := configs.RedisClient.Get(ctx, cacheKey); err == nil && cached != "" {
+		var sku Sku
+		if err := json.Unmarshal([]byte(cached), &sku); err == nil {
+			fmt.Println("Redis cache hit for sku:", id)
+			return &sku, nil
+		}
+	}
+	
+	// Fallback to DB
 	var sku Sku
 	if err := getDB(ctx).First(&sku, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
+
+	// Store in cache
+	if bytes, err := json.Marshal(sku); err == nil {
+		_, _ = configs.RedisClient.Set(ctx, cacheKey, string(bytes), constants.SkuCacheTTL)
+	}
+
 	return &sku, nil
 }
 
@@ -62,11 +84,19 @@ func DeleteSku(ctx context.Context, id uuid.UUID) (Sku, error) {
 		return sku, err
 	}
 
+	// Invalidate cache
+	_, _ = configs.RedisClient.Del(ctx, fmt.Sprintf("sku:%s", id))
+
 	return sku, nil
 }
 
 func UpdateSku(ctx context.Context, id uuid.UUID, updated *Sku) error {
-	return getDB(ctx).Model(&Sku{}).Where("id = ?", id).Updates(updated).Error
+	err := getDB(ctx).Model(&Sku{}).Where("id = ?", id).Updates(updated).Error
+
+	// Invalidate cache
+	_, _ = configs.RedisClient.Del(ctx, fmt.Sprintf("sku:%s", id))
+
+	return err
 }
 
 func GetFilteredSkus(ctx context.Context, tenantID uuid.UUID, sellerID uuid.UUID, skuCodes []string) ([]Sku, error) {

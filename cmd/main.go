@@ -28,6 +28,8 @@ func main() {
 	}
 
 	localConfig.InitDB(ctx)
+	localConfig.InitRedis()
+	defer localConfig.RedisClient.Close()
 
 	// Initialize HTTP server
 	server := http.InitializeServer(
