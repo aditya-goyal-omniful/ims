@@ -8,15 +8,15 @@ import (
 
 func SetupRoutes(server *commonHttp.Server) {
 	// Tenant Routes
-	server.GET("tenants/:id", controllers.GetTenants)
-	server.GET("tenants", controllers.GetTenantByID)
+	server.GET("tenants", controllers.GetTenants)
+	server.GET("tenants/:id", controllers.GetTenantByID)
 	server.POST("tenants", controllers.CreateTenant)
 	server.DELETE("tenants/:id", controllers.DeleteTenant)
 	server.PUT("tenants/:id", controllers.UpdateTenant)
 
 	// Seller Routes
-	server.GET("sellers/:id", controllers.GetSellers)
-	server.GET("sellers", controllers.GetSellerByID)
+	server.GET("sellers", controllers.GetSellers)
+	server.GET("sellers/:id", controllers.GetSellerByID)
 	server.POST("sellers", controllers.CreateSeller)
 	server.DELETE("sellers/:id", controllers.DeleteSeller)
 	server.PUT("sellers/:id", controllers.UpdateSeller)
