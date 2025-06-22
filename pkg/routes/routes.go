@@ -47,4 +47,9 @@ func SetupRoutes(server *http.Server) {
 		POST("/upsert", controllers.UpsertInventory).
 		GET("/view", controllers.ViewInventoryWithDefaults)
 
+
+	// InterService Communication
+	server.GET("validators/validate_order/:hub_id/:sku_id", controllers.ValidateOrder)
+
+
 }
