@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/aditya-goyal-omniful/ims/docs"
 	localConfig "github.com/aditya-goyal-omniful/ims/pkg/configs"
 	"github.com/aditya-goyal-omniful/ims/pkg/routes"
 	"github.com/omniful/go_commons/config"
@@ -29,6 +30,14 @@ func main() {
 	localConfig.InitDB(ctx)
 	localConfig.InitRedis()
 	defer localConfig.RedisClient.Close()
+
+	// Swagger metadata
+	docs.SwaggerInfo.Title = "Inventory Management Service"
+	docs.SwaggerInfo.Description = "API documentation for IMS"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "localhost:8087"
+	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.Schemes = []string{"http"}
 
 	// Initialize HTTP server
 	server := http.InitializeServer(

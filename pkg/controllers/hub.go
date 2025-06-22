@@ -10,6 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetHubs godoc
+// @Summary Get all hubs
+// @Tags Hubs
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Success 200 {array} models.Hub
+// @Router /hubs [get]
 func GetHubs(c *gin.Context) {
 	hubs, err := models.GetHubs(c)
 	if err != nil {
@@ -20,6 +27,14 @@ func GetHubs(c *gin.Context) {
 	c.JSON(http.StatusOK, hubs)
 }
 
+// GetHubByID godoc
+// @Summary Get hub by ID
+// @Tags Hubs
+// @Produce json
+// @Param id path string true "Hub ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Success 200 {object} models.Hub
+// @Router /hubs/{id} [get]
 func GetHubByID(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -38,6 +53,15 @@ func GetHubByID(c *gin.Context) {
 	c.JSON(http.StatusOK, hub)
 }
 
+// CreateHub godoc
+// @Summary Create a new hub
+// @Tags Hubs
+// @Accept json
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param hub body models.Hub true "Hub to create"
+// @Success 201 {object} models.Hub
+// @Router /hubs [post]
 func CreateHub(c *gin.Context) {
 	var hub models.Hub
 
@@ -70,6 +94,14 @@ func CreateHub(c *gin.Context) {
 	c.JSON(http.StatusCreated, hub)
 }
 
+// DeleteHub godoc
+// @Summary Delete hub by ID
+// @Tags Hubs
+// @Produce json
+// @Param id path string true "Hub ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Success 200 {object} models.Hub
+// @Router /hubs/{id} [delete]
 func DeleteHub(c *gin.Context) {
 	idStr := c.Param("id")
 	
@@ -88,6 +120,16 @@ func DeleteHub(c *gin.Context) {
 	c.JSON(http.StatusOK, hub)
 }
 
+// UpdateHub godoc
+// @Summary Update hub by ID
+// @Tags Hubs
+// @Accept json
+// @Produce json
+// @Param id path string true "Hub ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param hub body models.Hub true "Updated hub"
+// @Success 200 {object} models.Hub
+// @Router /hubs/{id} [put]
 func UpdateHub(c *gin.Context) {
 	idStr := c.Param("id")
 

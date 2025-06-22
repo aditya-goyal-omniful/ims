@@ -10,6 +10,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetSellers godoc
+// @Summary Get all sellers
+// @Tags Sellers
+// @Produce json
+// @Success 200 {array} models.Seller
+// @Router /sellers [get]
 func GetSellers(c *gin.Context) {
 	sellers, err := models.GetSellers(c)
 	if err != nil {
@@ -20,6 +26,13 @@ func GetSellers(c *gin.Context) {
 	c.JSON(http.StatusOK, sellers)
 }
 
+// GetSellerByID godoc
+// @Summary Get seller by ID
+// @Tags Sellers
+// @Produce json
+// @Param id path string true "Seller ID"
+// @Success 200 {object} models.Seller
+// @Router /sellers/{id} [get]
 func GetSellerByID(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -38,6 +51,14 @@ func GetSellerByID(c *gin.Context) {
 	c.JSON(http.StatusOK, Seller)
 }
 
+// CreateSeller godoc
+// @Summary Create a new seller
+// @Tags Sellers
+// @Accept json
+// @Produce json
+// @Param seller body models.Seller true "Seller to create"
+// @Success 201 {object} models.Seller
+// @Router /sellers [post]
 func CreateSeller(c *gin.Context) {
 	var seller models.Seller
 
@@ -59,6 +80,13 @@ func CreateSeller(c *gin.Context) {
 	c.JSON(http.StatusCreated, seller)
 }
 
+// DeleteSeller godoc
+// @Summary Delete seller by ID
+// @Tags Sellers
+// @Produce json
+// @Param id path string true "Seller ID"
+// @Success 200 {object} models.Seller
+// @Router /sellers/{id} [delete]
 func DeleteSeller(c *gin.Context) {
 	idStr := c.Param("id")
 	
@@ -77,6 +105,15 @@ func DeleteSeller(c *gin.Context) {
 	c.JSON(http.StatusOK, seller)
 }
 
+// UpdateSeller godoc
+// @Summary Update seller by ID
+// @Tags Sellers
+// @Accept json
+// @Produce json
+// @Param id path string true "Seller ID"
+// @Param seller body models.Seller true "Updated seller"
+// @Success 200 {object} models.Seller
+// @Router /sellers/{id} [put]
 func UpdateSeller(c *gin.Context) {
 	idStr := c.Param("id")
 

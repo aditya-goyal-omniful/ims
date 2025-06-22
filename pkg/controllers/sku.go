@@ -10,6 +10,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetSkus godoc
+// @Summary Get all SKUs (with optional filters)
+// @Tags SKUs
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param seller_id query string false "Filter by Seller ID"
+// @Param sku_codes query []string false "Filter by multiple SKU codes (repeat param)"
+// @Success 200 {array} models.Sku
+// @Router /skus [get]
 func GetSkus(c *gin.Context) {
 	// Extract tenant ID from auth headers
 	tenantIDStr := c.GetHeader("X-Tenant-ID")
@@ -46,6 +55,14 @@ func GetSkus(c *gin.Context) {
 	c.JSON(http.StatusOK, skus)
 }
 
+// GetSkuByID godoc
+// @Summary Get SKU by ID
+// @Tags SKUs
+// @Produce json
+// @Param id path string true "SKU ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Success 200 {object} models.Sku
+// @Router /skus/{id} [get]
 func GetSkuByID(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -64,6 +81,15 @@ func GetSkuByID(c *gin.Context) {
 	c.JSON(http.StatusOK, Sku)
 }
 
+// CreateSku godoc
+// @Summary Create a new SKU
+// @Tags SKUs
+// @Accept json
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param sku body models.Sku true "SKU to create"
+// @Success 201 {object} models.Sku
+// @Router /skus [post]
 func CreateSku(c *gin.Context) {
 	var sku models.Sku
 
@@ -96,6 +122,14 @@ func CreateSku(c *gin.Context) {
 	c.JSON(http.StatusCreated, sku)
 }
 
+// DeleteSku godoc
+// @Summary Delete SKU by ID
+// @Tags SKUs
+// @Produce json
+// @Param id path string true "SKU ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Success 200 {object} models.Sku
+// @Router /skus/{id} [delete]
 func DeleteSku(c *gin.Context) {
 	idStr := c.Param("id")
 	
@@ -114,6 +148,16 @@ func DeleteSku(c *gin.Context) {
 	c.JSON(http.StatusOK, sku)
 }
 
+// UpdateSku godoc
+// @Summary Update SKU by ID
+// @Tags SKUs
+// @Accept json
+// @Produce json
+// @Param id path string true "SKU ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param sku body models.Sku true "Updated SKU"
+// @Success 200 {object} models.Sku
+// @Router /skus/{id} [put]
 func UpdateSku(c *gin.Context) {
 	idStr := c.Param("id")
 

@@ -4,6 +4,8 @@ import (
 	"github.com/aditya-goyal-omniful/ims/pkg/controllers"
 	"github.com/aditya-goyal-omniful/ims/pkg/middlewares"
 	"github.com/omniful/go_commons/http"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRoutes(server *http.Server) {
@@ -50,6 +52,9 @@ func SetupRoutes(server *http.Server) {
 
 	// InterService Communication
 	server.GET("validators/validate_order/:hub_id/:sku_id", controllers.ValidateOrder)
+
+	// Swagger Routes
+	server.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 
 }

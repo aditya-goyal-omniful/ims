@@ -8,6 +8,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// GetTenants godoc
+// @Summary Get all tenants
+// @Tags Tenants
+// @Produce json
+// @Success 200 {array} models.Tenant
+// @Router /tenants [get]
 func GetTenants(c *gin.Context) {
 	Tenants, err := models.GetTenants(c)
 	if err != nil {
@@ -18,6 +24,14 @@ func GetTenants(c *gin.Context) {
 	c.JSON(http.StatusOK, Tenants)
 }
 
+// GetTenantByID godoc
+// @Summary Get tenant by ID
+// @Tags Tenants
+// @Produce json
+// @Param id path string true "Tenant ID"
+// @Success 200 {object} models.Tenant
+// @Failure 404 {object} map[string]string
+// @Router /tenants/{id} [get]
 func GetTenantByID(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -36,6 +50,14 @@ func GetTenantByID(c *gin.Context) {
 	c.JSON(http.StatusOK, Tenant)
 }
 
+// CreateTenant godoc
+// @Summary Create a new tenant
+// @Tags Tenants
+// @Accept json
+// @Produce json
+// @Param tenant body models.Tenant true "Tenant to create"
+// @Success 201 {object} models.Tenant
+// @Router /tenants [post]
 func CreateTenant(c *gin.Context) {
 	var Tenant models.Tenant
 
@@ -54,6 +76,13 @@ func CreateTenant(c *gin.Context) {
 	c.JSON(http.StatusCreated, Tenant)
 }
 
+// DeleteTenant godoc
+// @Summary Delete tenant by ID
+// @Tags Tenants
+// @Produce json
+// @Param id path string true "Tenant ID"
+// @Success 200 {object} models.Tenant
+// @Router /tenants/{id} [delete]
 func DeleteTenant(c *gin.Context) {
 	idStr := c.Param("id")
 	
@@ -72,6 +101,15 @@ func DeleteTenant(c *gin.Context) {
 	c.JSON(http.StatusOK, Tenant)
 }
 
+// UpdateTenant godoc
+// @Summary Update tenant by ID
+// @Tags Tenants
+// @Accept json
+// @Produce json
+// @Param id path string true "Tenant ID"
+// @Param tenant body models.Tenant true "Tenant data"
+// @Success 200 {object} models.Tenant
+// @Router /tenants/{id} [put]
 func UpdateTenant(c *gin.Context) {
 	idStr := c.Param("id")
 

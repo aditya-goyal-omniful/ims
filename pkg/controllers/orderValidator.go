@@ -9,6 +9,14 @@ import (
 	"github.com/omniful/go_commons/log"
 )
 
+// ValidateOrder godoc
+// @Summary Validate hub and SKU IDs
+// @Tags Validators
+// @Produce json
+// @Param hub_id path string true "Hub ID"
+// @Param sku_id path string true "SKU ID"
+// @Success 200 {object} map[string]bool
+// @Router /validators/validate_order/{hub_id}/{sku_id} [get]
 func ValidateOrder(c *gin.Context) {
 	log.Infof("Received validate request for hubID=%s skuID=%s", c.Param("hub_id"), c.Param("sku_id"))
 

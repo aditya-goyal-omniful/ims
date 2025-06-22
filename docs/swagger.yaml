@@ -1,140 +1,732 @@
-openapi: 3.0.3
+definitions:
+  models.Hub:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      location:
+        type: string
+      name:
+        type: string
+      tenant_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.Inventory:
+    properties:
+      created_at:
+        type: string
+      hub_id:
+        type: string
+      id:
+        type: string
+      quantity:
+        type: integer
+      sku_id:
+        type: string
+      tenant_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.InventoryView:
+    properties:
+      quantity:
+        type: integer
+      sku_code:
+        type: string
+      sku_id:
+        type: string
+      sku_name:
+        type: string
+    type: object
+  models.Seller:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      tenant_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.Sku:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      seller_id:
+        type: string
+      sku_code:
+        type: string
+      tenant_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.Tenant:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
 info:
-  title: Inventory Management Service API
-  version: 1.0.0
-  description: |
-    API documentation for Inventory Management Service (IMS), used for managing tenants, hubs, sellers, SKUs, and inventories.
-
-servers:
-  - url: http://localhost:8087
-
-components:
-  securitySchemes:
-    TenantAuth:
-      type: apiKey
-      in: header
-      name: X-Tenant-ID
-
-security:
-  - TenantAuth: []
-
+  contact: {}
 paths:
-  /tenants:
-    get:
-      summary: Get all tenants
-      responses:
-        '200':
-          description: List of tenants
-    post:
-      summary: Create a new tenant
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Tenant'
-      responses:
-        '201':
-          description: Tenant created
-
   /hubs:
     get:
-      summary: Get all hubs
-      security:
-        - TenantAuth: []
-      responses:
-        '200':
-          description: List of hubs
-    post:
-      summary: Create a hub
-      security:
-        - TenantAuth: []
-      requestBody:
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Hub'
+        type: string
+      produces:
+      - application/json
       responses:
-        '201':
-          description: Hub created
-
-  /skus:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Hub'
+            type: array
+      summary: Get all hubs
+      tags:
+      - Hubs
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Hub to create
+        in: body
+        name: hub
+        required: true
+        schema:
+          $ref: '#/definitions/models.Hub'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Hub'
+      summary: Create a new hub
+      tags:
+      - Hubs
+  /hubs/{id}:
+    delete:
+      parameters:
+      - description: Hub ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Hub'
+      summary: Delete hub by ID
+      tags:
+      - Hubs
     get:
-      summary: Get all SKUs
-      security:
-        - TenantAuth: []
+      parameters:
+      - description: Hub ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '200':
-          description: List of SKUs
-
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Hub'
+      summary: Get hub by ID
+      tags:
+      - Hubs
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Hub ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Updated hub
+        in: body
+        name: hub
+        required: true
+        schema:
+          $ref: '#/definitions/models.Hub'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Hub'
+      summary: Update hub by ID
+      tags:
+      - Hubs
+  /inventories:
+    get:
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Inventory'
+            type: array
+      summary: Get all inventories
+      tags:
+      - Inventories
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Inventory to create
+        in: body
+        name: inventory
+        required: true
+        schema:
+          $ref: '#/definitions/models.Inventory'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Inventory'
+      summary: Create new inventory
+      tags:
+      - Inventories
+  /inventories/{id}:
+    delete:
+      parameters:
+      - description: Inventory ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Inventory'
+      summary: Delete inventory by ID
+      tags:
+      - Inventories
+    get:
+      parameters:
+      - description: Inventory ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Inventory'
+      summary: Get inventory by ID
+      tags:
+      - Inventories
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Inventory ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Updated inventory
+        in: body
+        name: inventory
+        required: true
+        schema:
+          $ref: '#/definitions/models.Inventory'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Inventory'
+      summary: Update inventory by ID
+      tags:
+      - Inventories
   /inventories/upsert:
     post:
-      summary: Upsert inventory
-      security:
-        - TenantAuth: []
-      requestBody:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Inventory'
+        type: string
+      - description: Inventory object
+        in: body
+        name: inventory
+        required: true
+        schema:
+          $ref: '#/definitions/models.Inventory'
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Inventory upserted
-
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upsert (create or update) inventory
+      tags:
+      - Inventories
+  /inventories/view:
+    get:
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Hub ID
+        in: query
+        name: hub_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.InventoryView'
+            type: array
+      summary: View inventory including SKUs with zero quantity
+      tags:
+      - Inventories
+  /sellers:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Seller'
+            type: array
+      summary: Get all sellers
+      tags:
+      - Sellers
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Seller to create
+        in: body
+        name: seller
+        required: true
+        schema:
+          $ref: '#/definitions/models.Seller'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Seller'
+      summary: Create a new seller
+      tags:
+      - Sellers
+  /sellers/{id}:
+    delete:
+      parameters:
+      - description: Seller ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Seller'
+      summary: Delete seller by ID
+      tags:
+      - Sellers
+    get:
+      parameters:
+      - description: Seller ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Seller'
+      summary: Get seller by ID
+      tags:
+      - Sellers
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Seller ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated seller
+        in: body
+        name: seller
+        required: true
+        schema:
+          $ref: '#/definitions/models.Seller'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Seller'
+      summary: Update seller by ID
+      tags:
+      - Sellers
+  /skus:
+    get:
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Filter by Seller ID
+        in: query
+        name: seller_id
+        type: string
+      - collectionFormat: csv
+        description: Filter by multiple SKU codes (repeat param)
+        in: query
+        items:
+          type: string
+        name: sku_codes
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Sku'
+            type: array
+      summary: Get all SKUs (with optional filters)
+      tags:
+      - SKUs
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: SKU to create
+        in: body
+        name: sku
+        required: true
+        schema:
+          $ref: '#/definitions/models.Sku'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Sku'
+      summary: Create a new SKU
+      tags:
+      - SKUs
+  /skus/{id}:
+    delete:
+      parameters:
+      - description: SKU ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Sku'
+      summary: Delete SKU by ID
+      tags:
+      - SKUs
+    get:
+      parameters:
+      - description: SKU ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Sku'
+      summary: Get SKU by ID
+      tags:
+      - SKUs
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: SKU ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Updated SKU
+        in: body
+        name: sku
+        required: true
+        schema:
+          $ref: '#/definitions/models.Sku'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Sku'
+      summary: Update SKU by ID
+      tags:
+      - SKUs
+  /tenants:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Tenant'
+            type: array
+      summary: Get all tenants
+      tags:
+      - Tenants
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tenant to create
+        in: body
+        name: tenant
+        required: true
+        schema:
+          $ref: '#/definitions/models.Tenant'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Tenant'
+      summary: Create a new tenant
+      tags:
+      - Tenants
+  /tenants/{id}:
+    delete:
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Tenant'
+      summary: Delete tenant by ID
+      tags:
+      - Tenants
+    get:
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Tenant'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get tenant by ID
+      tags:
+      - Tenants
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant data
+        in: body
+        name: tenant
+        required: true
+        schema:
+          $ref: '#/definitions/models.Tenant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Tenant'
+      summary: Update tenant by ID
+      tags:
+      - Tenants
   /validators/validate_order/{hub_id}/{sku_id}:
     get:
-      summary: Validate order based on hub and SKU ID
       parameters:
-        - in: path
-          name: hub_id
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: sku_id
-          required: true
-          schema:
-            type: string
+      - description: Hub ID
+        in: path
+        name: hub_id
+        required: true
+        type: string
+      - description: SKU ID
+        in: path
+        name: sku_id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Validation result
-
-components:
-  schemas:
-    Tenant:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-    Hub:
-      type: object
-      required:
-        - name
-        - tenant_id
-      properties:
-        name:
-          type: string
-        location:
-          type: string
-        tenant_id:
-          type: string
-    Inventory:
-      type: object
-      required:
-        - tenant_id
-        - sku_id
-        - hub_id
-        - quantity
-      properties:
-        tenant_id:
-          type: string
-        sku_id:
-          type: string
-        hub_id:
-          type: string
-        quantity:
-          type: integer
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      summary: Validate hub and SKU IDs
+      tags:
+      - Validators
+swagger: "2.0"

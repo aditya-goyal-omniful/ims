@@ -10,6 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetInventories godoc
+// @Summary Get all inventories
+// @Tags Inventories
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Success 200 {array} models.Inventory
+// @Router /inventories [get]
 func GetInventories(c *gin.Context) {
 	Inventorys, err := models.GetInventories(c)
 	if err != nil {
@@ -20,6 +27,14 @@ func GetInventories(c *gin.Context) {
 	c.JSON(http.StatusOK, Inventorys)
 }
 
+// GetInventoryByID godoc
+// @Summary Get inventory by ID
+// @Tags Inventories
+// @Produce json
+// @Param id path string true "Inventory ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Success 200 {object} models.Inventory
+// @Router /inventories/{id} [get]
 func GetInventoryByID(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -38,6 +53,15 @@ func GetInventoryByID(c *gin.Context) {
 	c.JSON(http.StatusOK, inventory)
 }
 
+// CreateInventory godoc
+// @Summary Create new inventory
+// @Tags Inventories
+// @Accept json
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param inventory body models.Inventory true "Inventory to create"
+// @Success 201 {object} models.Inventory
+// @Router /inventories [post]
 func CreateInventory(c *gin.Context) {
 	var inventory models.Inventory
 
@@ -70,6 +94,14 @@ func CreateInventory(c *gin.Context) {
 	c.JSON(http.StatusCreated, inventory)
 }
 
+// DeleteInventory godoc
+// @Summary Delete inventory by ID
+// @Tags Inventories
+// @Produce json
+// @Param id path string true "Inventory ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Success 200 {object} models.Inventory
+// @Router /inventories/{id} [delete]
 func DeleteInventory(c *gin.Context) {
 	idStr := c.Param("id")
 	
@@ -88,6 +120,16 @@ func DeleteInventory(c *gin.Context) {
 	c.JSON(http.StatusOK, inventory)
 }
 
+// UpdateInventory godoc
+// @Summary Update inventory by ID
+// @Tags Inventories
+// @Accept json
+// @Produce json
+// @Param id path string true "Inventory ID"
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param inventory body models.Inventory true "Updated inventory"
+// @Success 200 {object} models.Inventory
+// @Router /inventories/{id} [put]
 func UpdateInventory(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -125,6 +167,15 @@ func UpdateInventory(c *gin.Context) {
 	c.JSON(http.StatusOK, updated)
 }
 
+// UpsertInventory godoc
+// @Summary Upsert (create or update) inventory
+// @Tags Inventories
+// @Accept json
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param inventory body models.Inventory true "Inventory object"
+// @Success 200 {object} map[string]string
+// @Router /inventories/upsert [post]
 func UpsertInventory(c *gin.Context) {
 	var inventory models.Inventory
 
@@ -156,6 +207,14 @@ func UpsertInventory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Inventory upserted", "inventory": inventory})
 }
 
+// ViewInventoryWithDefaults godoc
+// @Summary View inventory including SKUs with zero quantity
+// @Tags Inventories
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param hub_id query string true "Hub ID"
+// @Success 200 {array} models.InventoryView
+// @Router /inventories/view [get]
 func ViewInventoryWithDefaults(c *gin.Context) {
 	tenantIDStr := c.GetHeader("X-Tenant-ID")
 	hubIDStr := c.Query("hub_id")
