@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  title: Inventory Management Service API
+  version: 1.0.0
+  description: |
+    API documentation for Inventory Management Service (IMS), used for managing tenants, hubs, sellers, SKUs, and inventories.
+
+servers:
+  - url: http://localhost:8080
+
+components:
+  securitySchemes:
+    TenantAuth:
+      type: apiKey
+      in: header
+      name: X-Tenant-ID
+
+security:
+  - TenantAuth: []
+
+paths:
+  /tenants:
+    get:
+      summary: Get all tenants
+      responses:
+        '200':
+          description: List of tenants
+    post:
+      summary: Create a new tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tenant'
+      responses:
+        '201':
+          description: Tenant created
+
+  /hubs:
+    get:
+      summary: Get all hubs
+      security:
+        - TenantAuth: []
+      responses:
+        '200':
+          description: List of hubs
+    post:
+      summary: Create a hub
+      security:
+        - TenantAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hub'
+      responses:
+        '201':
+          description: Hub created
+
+  /skus:
+    get:
+      summary: Get all SKUs
+      security:
+        - TenantAuth: []
+      responses:
+        '200':
+          description: List of SKUs
+
+  /inventories/upsert:
+    post:
+      summary: Upsert inventory
+      security:
+        - TenantAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inventory'
+      responses:
+        '200':
+          description: Inventory upserted
+
+  /validators/validate_order/{hub_id}/{sku_id}:
+    get:
+      summary: Validate order based on hub and SKU ID
+      parameters:
+        - in: path
+          name: hub_id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: sku_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Validation result
+
+components:
+  schemas:
+    Tenant:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    Hub:
+      type: object
+      required:
+        - name
+        - tenant_id
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+        tenant_id:
+          type: string
+    Inventory:
+      type: object
+      required:
+        - tenant_id
+        - sku_id
+        - hub_id
+        - quantity
+      properties:
+        tenant_id:
+          type: string
+        sku_id:
+          type: string
+        hub_id:
+          type: string
+        quantity:
+          type: integer
