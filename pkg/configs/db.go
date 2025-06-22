@@ -3,12 +3,12 @@ package configs
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/omniful/go_commons/config"
 	"github.com/omniful/go_commons/db/sql/migration"
 	"github.com/omniful/go_commons/db/sql/postgres"
+	"github.com/omniful/go_commons/log"
 )
 
 var DB *postgres.DbCluster
@@ -43,14 +43,14 @@ func InitDB(ctx context.Context) {
 
 	migrator, err := migration.InitializeMigrate("file://migrations", dsn)
 	if err != nil {
-		log.Fatalf("Failed to initialize DB migrator: %v", err)
+		log.Panic("Failed to initialize DB migrator: %v", err)
 	}
 
 	if err := migrator.Up(); err != nil {
-		log.Fatalf("Database migration failed: %v", err)
+		log.Panic("Database migration failed: %v", err)
 	}
 
-	fmt.Println("Connected to database and ran migrations successfully")
+	log.Infof("Connected to database and ran migrations successfully")
 }
 
 func GetDB() *postgres.DbCluster {
