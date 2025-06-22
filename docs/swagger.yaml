@@ -6,7 +6,7 @@ info:
     API documentation for Inventory Management Service (IMS), used for managing tenants, hubs, sellers, SKUs, and inventories.
 
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8087
 
 components:
   securitySchemes:
