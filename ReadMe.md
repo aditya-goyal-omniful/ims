@@ -93,7 +93,7 @@ This ensures tenant-level data isolation in all operations.
 
 Swagger UI is available at:
 
-👉 [`http://localhost:8080/swagger/index.html`](http://localhost:8080/swagger/index.html)
+👉 [`http://localhost:8087/swagger/index.html`](http://localhost:8087/swagger/index.html)
 
 ---
 
