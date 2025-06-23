@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/omniful/go_commons/i18n"
 	"github.com/omniful/go_commons/log"
 )
 
@@ -22,7 +23,7 @@ func RequestLogger() gin.HandlerFunc {
 		latency := time.Since(start)
 		statusCode := c.Writer.Status()
 
-		log.Infof("Method=%s Path=%s Query=%s Status=%d Latency=%s TenantID=%s",
+		log.Infof(i18n.Translate(c, "Method=%s Path=%s Query=%s Status=%d Latency=%s TenantID=%s"),
 			method, path, raw, statusCode, latency, tenantID)
 	}
 }

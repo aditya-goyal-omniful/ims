@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"errors"
-	"net/http"
 
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/omniful/go_commons/http"
+	"github.com/omniful/go_commons/i18n"
 	"gorm.io/gorm"
 )
 
@@ -19,11 +20,11 @@ import (
 func GetSellers(c *gin.Context) {
 	sellers, err := models.GetSellers(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(http.StatusOK, sellers)
+	c.JSON(int(http.StatusOK), sellers)
 }
 
 // GetSellerByID godoc
@@ -38,17 +39,17 @@ func GetSellerByID(c *gin.Context) {
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Seller ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Seller ID")})
 		return
 	}
 
 	Seller, err := models.GetSeller(c, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(http.StatusOK, Seller)
+	c.JSON(int(http.StatusOK), Seller)
 }
 
 // CreateSeller godoc
@@ -64,20 +65,20 @@ func CreateSeller(c *gin.Context) {
 
 	err := c.Bind(&seller)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
 	if err := models.CreateSeller(c, &seller); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create seller"})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to create seller")})
 		return
 	}
 
-	c.JSON(http.StatusCreated, seller)
+	c.JSON(int(http.StatusCreated), seller)
 }
 
 // DeleteSeller godoc
@@ -92,17 +93,17 @@ func DeleteSeller(c *gin.Context) {
 	
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Seller ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Seller ID")})
 		return
 	}
 
 	seller, err := models.DeleteSeller(c, id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Seller not found"})
+		c.JSON(int(http.StatusNotFound), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Seller not found")})
 		return
 	}
 
-	c.JSON(http.StatusOK, seller)
+	c.JSON(int(http.StatusOK), seller)
 }
 
 // UpdateSeller godoc
@@ -119,34 +120,34 @@ func UpdateSeller(c *gin.Context) {
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Seller ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Seller ID")})
 		return
 	}
 
 	var seller models.Seller
 	err = c.Bind(&seller)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 	
 	if seller.TenantID != uuid.Nil {
 		if _, err := models.GetTenant(c, seller.TenantID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+				c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate tenant"})
+			c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to validate tenant")})
 			return
 		}
 	}
 
 	err = models.UpdateSeller(c, id, &seller)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
 	updated, _ := models.GetSeller(c, id)
-	c.JSON(http.StatusOK, updated)
+	c.JSON(int(http.StatusOK), updated)
 }

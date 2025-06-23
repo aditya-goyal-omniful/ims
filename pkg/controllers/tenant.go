@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"net/http"
-
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/omniful/go_commons/http"
+	"github.com/omniful/go_commons/i18n"
 )
 
 // GetTenants godoc
@@ -17,11 +17,11 @@ import (
 func GetTenants(c *gin.Context) {
 	Tenants, err := models.GetTenants(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(http.StatusOK, Tenants)
+	c.JSON(int(http.StatusOK), Tenants)
 }
 
 // GetTenantByID godoc
@@ -37,17 +37,17 @@ func GetTenantByID(c *gin.Context) {
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Tenant ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Tenant ID")})
 		return
 	}
 
 	Tenant, err := models.GetTenant(c, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(http.StatusOK, Tenant)
+	c.JSON(int(http.StatusOK), Tenant)
 }
 
 // CreateTenant godoc
@@ -63,17 +63,17 @@ func CreateTenant(c *gin.Context) {
 
 	err := c.Bind(&Tenant)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
 	err = models.CreateTenant(c, &Tenant)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(http.StatusCreated, Tenant)
+	c.JSON(int(http.StatusCreated), Tenant)
 }
 
 // DeleteTenant godoc
@@ -88,17 +88,17 @@ func DeleteTenant(c *gin.Context) {
 	
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Tenant ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Tenant ID")})
 		return
 	}
 
 	Tenant, err := models.DeleteTenant(c, id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		c.JSON(int(http.StatusNotFound), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
 		return
 	}
 
-	c.JSON(http.StatusOK, Tenant)
+	c.JSON(int(http.StatusOK), Tenant)
 }
 
 // UpdateTenant godoc
@@ -115,23 +115,23 @@ func UpdateTenant(c *gin.Context) {
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Tenant ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Tenant ID")})
 		return
 	}
 
 	var Tenant models.Tenant
 	err = c.Bind(&Tenant)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
 	err = models.UpdateTenant(c, id, &Tenant)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
 	updated, _ := models.GetTenant(c, id)
-	c.JSON(http.StatusOK, updated)
+	c.JSON(int(http.StatusOK), updated)
 }

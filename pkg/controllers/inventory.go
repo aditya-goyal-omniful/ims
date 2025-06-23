@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"errors"
-	"net/http"
 
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/omniful/go_commons/http"
+	"github.com/omniful/go_commons/i18n"
 	"gorm.io/gorm"
 )
 
@@ -27,11 +28,11 @@ type CheckInventoryRequest struct {
 func GetInventories(c *gin.Context) {
 	Inventorys, err := models.GetInventories(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(http.StatusOK, Inventorys)
+	c.JSON(int(http.StatusOK), Inventorys)
 }
 
 // GetInventoryByID godoc
@@ -47,17 +48,17 @@ func GetInventoryByID(c *gin.Context) {
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Inventory ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Inventory ID")})
 		return
 	}
 
 	inventory, err := models.GetInventory(c, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(http.StatusOK, inventory)
+	c.JSON(int(http.StatusOK), inventory)
 }
 
 // CreateInventory godoc
@@ -74,7 +75,7 @@ func CreateInventory(c *gin.Context) {
 
 	err := c.Bind(&inventory)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
@@ -83,7 +84,7 @@ func CreateInventory(c *gin.Context) {
 	if tenantIDStr != "" {
 		tenantID, err := uuid.Parse(tenantIDStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant_id in header"})
+			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid tenant_id in header")})
 			return
 		}
 		inventory.TenantID = tenantID
@@ -91,14 +92,14 @@ func CreateInventory(c *gin.Context) {
 
 	if err := models.CreateInventory(c, &inventory); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create inventory"})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to create inventory")})
 		return
 	}
 
-	c.JSON(http.StatusCreated, inventory)
+	c.JSON(int(http.StatusCreated), inventory)
 }
 
 // DeleteInventory godoc
@@ -114,17 +115,17 @@ func DeleteInventory(c *gin.Context) {
 	
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Inventory ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Inventory ID")})
 		return
 	}
 
 	inventory, err := models.DeleteInventory(c, id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Inventory not found"})
+		c.JSON(int(http.StatusNotFound), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Inventory not found")})
 		return
 	}
 
-	c.JSON(http.StatusOK, inventory)
+	c.JSON(int(http.StatusOK), inventory)
 }
 
 // UpdateInventory godoc
@@ -142,36 +143,36 @@ func UpdateInventory(c *gin.Context) {
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Inventory ID"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Inventory ID")})
 		return
 	}
 
 	var inventory models.Inventory
 	err = c.Bind(&inventory)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
 	if inventory.TenantID != uuid.Nil {
 		if _, err := models.GetTenant(c, inventory.TenantID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+				c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate tenant"})
+			c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to validate tenant")})
 			return
 		}
 	}
 
 	err = models.UpdateInventory(c, id, &inventory)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
 	updated, _ := models.GetInventory(c, id)
-	c.JSON(http.StatusOK, updated)
+	c.JSON(int(http.StatusOK), updated)
 }
 
 // UpsertInventory godoc
@@ -188,7 +189,7 @@ func UpsertInventory(c *gin.Context) {
 
 	err := c.Bind(&inventory)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
@@ -196,7 +197,7 @@ func UpsertInventory(c *gin.Context) {
 	tenantIDStr := c.GetHeader("X-Tenant-ID")
 	tenantID, err := uuid.Parse(tenantIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant_id in header"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid tenant_id in header")})
 		return
 	}
 	inventory.TenantID = tenantID
@@ -204,14 +205,14 @@ func UpsertInventory(c *gin.Context) {
 	// Call the upsert logic
 	if err := models.UpsertInventory(c, &inventory); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Tenant not found"})
+			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upsert inventory"})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to upsert inventory")})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Inventory upserted", "inventory": inventory})
+	c.JSON(int(http.StatusOK), gin.H{i18n.Translate(c, "message"): i18n.Translate(c, "Inventory upserted"), i18n.Translate(c, "inventory"): inventory})
 }
 
 // ViewInventoryWithDefaults godoc
@@ -227,29 +228,29 @@ func ViewInventoryWithDefaults(c *gin.Context) {
 	hubIDStr := c.Query("hub_id")
 
 	if tenantIDStr == "" || hubIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing tenant_id header or hub_id query param"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Missing tenant_id header or hub_id query param")})
 		return
 	}
 
 	tenantID, err := uuid.Parse(tenantIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant_id"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid tenant_id")})
 		return
 	}
 
 	hubID, err := uuid.Parse(hubIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hub_id"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid hub_id")})
 		return
 	}
 
 	view, err := models.GetInventoryWithDefaults(c, tenantID, hubID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(http.StatusOK, view)
+	c.JSON(int(http.StatusOK), view)
 }
 
 // CheckAndUpdateInventory godoc
@@ -264,31 +265,31 @@ func ViewInventoryWithDefaults(c *gin.Context) {
 func CheckAndUpdateInventory(c *gin.Context) {
 	var req CheckInventoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request payload")})
 		return
 	}
 
 	inv, err := models.GetInventoryBySkuHub(c, req.SKUID, req.HubID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, gin.H{"available": false})
+			c.JSON(int(http.StatusOK), gin.H{i18n.Translate(c, "available"): false})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch inventory"})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to fetch inventory")})
 		return
 	}
 
 	if inv.Quantity < req.Quantity {
-		c.JSON(http.StatusOK, gin.H{"available": false})
+		c.JSON(int(http.StatusOK), gin.H{i18n.Translate(c, "available"): false})
 		return
 	}
 
 	// Deduct inventory
 	newQty := inv.Quantity - req.Quantity
 	if err := models.UpdateInventoryQuantity(c, inv.ID, newQty); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update inventory"})
+		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to update inventory")})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"available": true})
+	c.JSON(int(http.StatusOK), gin.H{i18n.Translate(c, "available"): true})
 }

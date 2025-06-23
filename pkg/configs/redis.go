@@ -1,16 +1,18 @@
 package configs
 
 import (
+	"context"
 	"time"
 
+	"github.com/omniful/go_commons/i18n"
 	"github.com/omniful/go_commons/log"
 	"github.com/omniful/go_commons/redis"
 )
 
 var RedisClient *redis.Client
 
-func InitRedis() {
-	log.Infof("Initializing Redis...")
+func InitRedis(ctx context.Context) {
+	log.Infof(i18n.Translate(ctx, "Initializing Redis..."))
 	config := &redis.Config{
 		Hosts: []string{"localhost:6379"},
 		PoolSize: 50,
@@ -21,5 +23,5 @@ func InitRedis() {
 	}
 	
 	RedisClient = redis.NewClient(config)
-	log.Infof("Redis initialized successfully!")
+	log.Infof(i18n.Translate(ctx, "Redis initialized successfully!"))
 }

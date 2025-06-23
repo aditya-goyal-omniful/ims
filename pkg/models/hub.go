@@ -9,6 +9,8 @@ import (
 	"github.com/aditya-goyal-omniful/ims/pkg/configs"
 	"github.com/aditya-goyal-omniful/ims/pkg/constants"
 	"github.com/google/uuid"
+	"github.com/omniful/go_commons/i18n"
+	"github.com/omniful/go_commons/log"
 	"gorm.io/gorm"
 )
 
@@ -40,7 +42,7 @@ func GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
 	if cached, err := configs.RedisClient.Get(ctx, cacheKey); err == nil && cached != "" {
 		var hub Hub
 		if err := json.Unmarshal([]byte(cached), &hub); err == nil {
-			fmt.Println("Redis cache hit for hub:", id)
+			log.Infof(i18n.Translate(ctx, "Redis cache hit for hub:"), id)
 			return &hub, nil
 		}
 	}
@@ -55,7 +57,7 @@ func GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
 	if bytes, err := json.Marshal(hub); err == nil {
 		_, err := configs.RedisClient.Set(ctx, cacheKey, string(bytes), constants.SkuCacheTTL)
 		if err != nil {
-			fmt.Println("Failed to set cache:", err)
+			log.Infof(i18n.Translate(ctx, "Failed to set cache:"), err)
 		}
 	}
 

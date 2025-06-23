@@ -1,10 +1,10 @@
 package middlewares
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/omniful/go_commons/http"
+	"github.com/omniful/go_commons/i18n"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -12,13 +12,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		tenantID := c.GetHeader("X-Tenant-ID")
 
 		if tenantID == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing X-Tenant-ID header"})
+			c.AbortWithStatusJSON(int(http.StatusUnauthorized), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Missing X-Tenant-ID header")})
 			return
 		}
 
 		// Validate UUID format
 		if _, err := uuid.Parse(tenantID); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid X-Tenant-ID format"})
+			c.AbortWithStatusJSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid X-Tenant-ID format")})
 			return
 		}
 

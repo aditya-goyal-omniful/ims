@@ -9,19 +9,21 @@ import (
 	"github.com/aditya-goyal-omniful/ims/pkg/routes"
 	"github.com/omniful/go_commons/config"
 	"github.com/omniful/go_commons/http"
+	"github.com/omniful/go_commons/i18n"
 	"github.com/omniful/go_commons/log"
 )
 
 func main() {
-	// Initialize configuration from CONFIG_SOURCE
-	if err := config.Init(15 * time.Second); err != nil {
-		log.Panic("Failed to initialize config: %v", err)
-	}
-
 	ctx, err := config.TODOContext()
 	if err != nil {
-		log.Panic("Failed to get config context: %v", err)
+		log.Panic(i18n.Translate(ctx, "Failed to get config context: %v"), err)
 	}
+
+	// Initialize configuration from CONFIG_SOURCE
+	if err := config.Init(15 * time.Second); err != nil {
+		log.Panic(i18n.Translate(ctx, "Failed to initialize config: %v"), err)
+	}
+
 
 	port := config.GetString(ctx, "server.port")
 	if port == "" {
@@ -29,7 +31,7 @@ func main() {
 	}
 
 	localConfig.InitDB(ctx)
-	localConfig.InitRedis()
+	localConfig.InitRedis(ctx)
 	defer localConfig.RedisClient.Close()
 
 	// Swagger metadata
@@ -55,8 +57,8 @@ func main() {
 
 	routes.SetupRoutes(server)
 
-	log.Infof("Starting server on port", port)
+	log.Infof(i18n.Translate(ctx, "Starting server on port"), port)
 	if err := server.StartServer("ims"); err != nil {
-		log.Panic("Failed to start server: %v", err)
+		log.Panic(i18n.Translate(ctx, "Failed to start server: %v"), err)
 	}
 }
