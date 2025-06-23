@@ -14,15 +14,17 @@ import (
 )
 
 func main() {
-	ctx, err := config.TODOContext()
-	if err != nil {
-		log.Panic(i18n.Translate(ctx, "Failed to get config context: %v"), err)
-	}
-
 	// Initialize configuration from CONFIG_SOURCE
 	if err := config.Init(15 * time.Second); err != nil {
-		log.Panic(i18n.Translate(ctx, "Failed to initialize config: %v"), err)
+		log.Panic( "Failed to initialize config: %v", err)
 	}
+
+
+	ctx, err := config.TODOContext()
+	if err != nil {
+		log.Panic("Failed to get config context: %v", err)
+	}
+
 
 
 	port := config.GetString(ctx, "server.port")
