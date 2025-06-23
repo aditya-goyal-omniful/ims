@@ -5,6 +5,7 @@ import (
 
 	"github.com/aditya-goyal-omniful/ims/docs"
 	localConfig "github.com/aditya-goyal-omniful/ims/pkg/configs"
+	"github.com/aditya-goyal-omniful/ims/pkg/middlewares"
 	"github.com/aditya-goyal-omniful/ims/pkg/routes"
 	"github.com/omniful/go_commons/config"
 	"github.com/omniful/go_commons/http"
@@ -39,6 +40,7 @@ func main() {
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Schemes = []string{"http"}
 
+	
 	// Initialize HTTP server
 	server := http.InitializeServer(
 		":"+port,
@@ -47,8 +49,9 @@ func main() {
 		70*time.Second,
 		false,
 	)
-
+	
 	server.Use(config.Middleware())
+	server.Use(middlewares.RequestLogger())
 
 	routes.SetupRoutes(server)
 
