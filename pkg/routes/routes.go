@@ -52,6 +52,8 @@ func SetupRoutes(server *http.Server) {
 
 	// InterService Communication
 	server.GET("validators/validate_order/:hub_id/:sku_id", controllers.ValidateOrder)
+	server.POST("/inventory/check-and-update", controllers.CheckAndUpdateInventory)
+
 
 	// Swagger Routes
 	server.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

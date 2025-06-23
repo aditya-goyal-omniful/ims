@@ -10,6 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
+type CheckInventoryRequest struct {
+	SKUID    uuid.UUID `json:"sku_id" binding:"required"`
+	HubID    uuid.UUID `json:"hub_id" binding:"required"`
+	Quantity int       `json:"quantity" binding:"required"`
+}
+
+
 // GetInventories godoc
 // @Summary Get all inventories
 // @Tags Inventories
@@ -243,4 +250,45 @@ func ViewInventoryWithDefaults(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, view)
+}
+
+// CheckAndUpdateInventory godoc
+// @Summary Check and update inventory if sufficient
+// @Tags Inventories
+// @Accept json
+// @Produce json
+// @Param X-Tenant-ID header string true "Tenant ID"
+// @Param payload body CheckInventoryRequest true "Inventory check payload"
+// @Success 200 {object} map[string]bool
+// @Router /inventory/check-and-update [post]
+func CheckAndUpdateInventory(c *gin.Context) {
+	var req CheckInventoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	inv, err := models.GetInventoryBySkuHub(c, req.SKUID, req.HubID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, gin.H{"available": false})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch inventory"})
+		return
+	}
+
+	if inv.Quantity < req.Quantity {
+		c.JSON(http.StatusOK, gin.H{"available": false})
+		return
+	}
+
+	// Deduct inventory
+	newQty := inv.Quantity - req.Quantity
+	if err := models.UpdateInventoryQuantity(c, inv.ID, newQty); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update inventory"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"available": true})
 }

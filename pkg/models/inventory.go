@@ -104,3 +104,16 @@ func GetInventoryWithDefaults(ctx context.Context, tenantID, hubID uuid.UUID) ([
 
 	return result, err
 }
+
+func GetInventoryBySkuHub(ctx context.Context, skuID, hubID uuid.UUID) (*Inventory, error) {
+	var inv Inventory
+	err := getDB(ctx).Where("sku_id = ? AND hub_id = ?", skuID, hubID).First(&inv).Error
+	if err != nil {
+		return nil, err
+	}
+	return &inv, nil
+}
+
+func UpdateInventoryQuantity(ctx context.Context, id uuid.UUID, quantity int) error {
+	return getDB(ctx).Model(&Inventory{}).Where("id = ?", id).Update("quantity", quantity).Error
+}
