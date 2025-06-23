@@ -460,6 +460,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/check-and-update": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Inventories"
+                ],
+                "summary": "Check and update inventory if sufficient",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "X-Tenant-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Inventory check payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.CheckInventoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/sellers": {
             "get": {
                 "produces": [
@@ -997,6 +1040,25 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controllers.CheckInventoryRequest": {
+            "type": "object",
+            "required": [
+                "hub_id",
+                "quantity",
+                "sku_id"
+            ],
+            "properties": {
+                "hub_id": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "sku_id": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Hub": {
             "type": "object",
             "properties": {

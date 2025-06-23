@@ -1,4 +1,17 @@
 definitions:
+  controllers.CheckInventoryRequest:
+    properties:
+      hub_id:
+        type: string
+      quantity:
+        type: integer
+      sku_id:
+        type: string
+    required:
+    - hub_id
+    - quantity
+    - sku_id
+    type: object
   models.Hub:
     properties:
       created_at:
@@ -377,6 +390,34 @@ paths:
               $ref: '#/definitions/models.InventoryView'
             type: array
       summary: View inventory including SKUs with zero quantity
+      tags:
+      - Inventories
+  /inventory/check-and-update:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tenant ID
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Inventory check payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CheckInventoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      summary: Check and update inventory if sufficient
       tags:
       - Inventories
   /sellers:
