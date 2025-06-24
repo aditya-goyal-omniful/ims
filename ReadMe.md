@@ -1,45 +1,82 @@
 # 🏬 Inventory Management Service (IMS)
 
-Inventory Management microservice built using **Go**, **Gin**, **GORM**, **PostgreSQL**, **Redis**, and **GoCommons**. This service supports **multi-tenant inventory tracking**, **Redis caching**, and **inter-service order validation**. It's part of a microservice-based architecture where it integrates with an Order Management System (OMS) and is cloud-native ready.
+Golang-based microservice to manage inventory storage, validation, and updates using PostgreSQL, Redis, and inter-service APIs. Supports multi-tenant environments with Redis-backed caching and i18n support.
 
 ---
 
-## 🚀 Features
+## 🧩 Tech Stack
 
-* 🔑 **Multi-Tenant Support** via `X-Tenant-ID` header
-* 🏢 **Tenant, Seller, Hub, SKU, Inventory** CRUD operations
-* ⚡ **Redis Caching** for hub and SKU lookups
-* 🔁 **Inventory Upsert** operation with atomic behavior
-* 🔍 **Order Validation API** for inter-service inventory checks
-* 🔐 **Middleware-based Authentication** for tenant isolation
-* 📦 Modular & production-ready with cloud support (e.g., S3, Kafka, SQS)
+* **Language**: Go
+* **Framework**: Gin
+* **Database**: PostgreSQL (via GORM)
+* **Cache**: Redis
+* **Config**: go\_commons/config
+* **HTTP Client**: go\_commons/httpclient
+* **i18n**: go\_commons/i18n
+* **Swagger**: Swagger UI via swaggo/gin-swagger
 
 ---
 
-## 📁 Project Structure
+## 📂 Features
 
+* Multi-tenant support via `X-Tenant-ID` header
+* CRUD operations for Tenant, Seller, Hub, SKU, Inventory
+* Redis caching for SKU and Hub validation
+* Inventory Upsert endpoint for atomic updates
+* Order validation API for inter-service communication with OMS
+* Middleware-based tenant isolation
+* i18n support for multilingual logs and errors
+* Swagger docs hosted at `/swagger/index.html`
+
+---
+
+## 🧪 API Endpoints
+
+| Method | Endpoint                         | Description                        |
+| ------ | -------------------------------- | ---------------------------------- |
+| GET    | `/hubs`                          | Get list of hubs (tenant isolated) |
+| GET    | `/skus`                          | Get list of SKUs with filters      |
+| POST   | `/inventories/upsert`            | Atomically upsert inventory        |
+| GET    | `/validators/validate_order/...` | Validate order hub/sku for OMS     |
+
+---
+
+## ⚙️ How It Works
+
+### 1. **Inventory Upsert**
+
+* API: `POST /inventories/upsert`
+* Accepts tenant\_id, hub\_id, sku\_id, and quantity
+* Uses GORM for insert/update based on existence
+
+### 2. **Order Validation (OMS Integration)**
+
+* API: `GET /validators/validate_order/:hub_id/:sku_id`
+* Called by OMS to verify inventory exists for a hub+sku combo
+* Uses Redis caching for fast validation
+
+### 3. **Redis Caching**
+
+* Hubs and SKUs are cached using Redis keyed by tenant and entity ID
+* Improves performance on frequent validations
+
+---
+
+## 🐳 Docker Setup
+
+Not containerized by default, but supports Docker-ready components:
+
+* PostgreSQL
+* Redis
+
+---
+
+## 🛠 Run Locally
+
+```powershell
+$env:CONFIG_SOURCE = "local"
+go run cmd/main.go
 ```
-ims/
-├── cmd/                    # Main entry point
-├── pkg/
-│   ├── configs/            # DB, Redis, and config loading logic
-│   ├── controllers/        # Gin handler functions for all models
-│   ├── models/             # GORM models and business logic
-│   ├── routes/             # All route definitions using GoCommons HTTP
-│   ├── middlewares/        # Auth middleware for multi-tenant
-│   └── utils/              # Helper functions (e.g., UUID validation)
-├── swagger.yaml            # API documentation in OpenAPI format
-└── go.mod
-```
-
----
-
-## ⚙️ Configuration
-
-This project uses **GoCommons Config**, allowing flexible configuration sources:
-
-* `local.yaml` for development
-* AWS AppConfig for production
 
 ### Sample `local.yaml`
 
@@ -61,71 +98,67 @@ app:
   port: 8080
 ```
 
-Set environment variable:
-
-```bash
-$env:CONFIG_SOURCE = "local"
-```
-
 ---
 
-## 🚦 Running Locally
+## 📎 Swagger UI
 
-```bash
-go run cmd/main.go
-```
-
----
-
-## 🔒 Headers Required
-
-Every protected route requires the following header:
-
-```http
-X-Tenant-ID: <UUID>
-```
-
-This ensures tenant-level data isolation in all operations.
-
----
-
-## 📚 API Documentation
-
-Swagger UI is available at:
+> View Swagger docs at:
 
 👉 [`http://localhost:8087/swagger/index.html`](http://localhost:8087/swagger/index.html)
 
 ---
 
-## ✅ Sample Endpoints
+## 🔐 Authentication Header
 
-### GET /hubs
-
-```http
-GET /hubs
-Headers: X-Tenant-ID: <uuid>
-```
-
-### POST /inventories/upsert
+All routes require tenant identification:
 
 ```http
-POST /inventories/upsert
-Content-Type: application/json
-Headers: X-Tenant-ID: <uuid>
-
-Body:
-{
-  "tenant_id": "<uuid>",
-  "hub_id": "<uuid>",
-  "sku_id": "<uuid>",
-  "quantity": 10
-}
+X-Tenant-ID: <uuid>
 ```
 
-## 🌐 Related Services
+---
 
-* 📦 **Order Management Service (OMS)** – Consumes inventory APIs, validates availability via `/validators/validate_order/:hub_id/:sku_id`
-* 🗃️ **Kafka + SQS** ready for real-time order and inventory flow
+## 📦 Directory Structure
+
+```
+ims/
+├── cmd/                    # Entry point
+├── pkg/
+│   ├── configs/            # DB, Redis, config logic
+│   ├── controllers/        # API handler logic
+│   ├── models/             # GORM models
+│   ├── routes/             # HTTP routes
+│   ├── middlewares/        # Multi-tenant auth
+│   └── utils/              # Helper methods
+├── swagger.yaml            # Swagger API docs
+└── go.mod
+```
+
+---
+
+## 📈 Future Improvements
+
+* Add Prometheus/Grafana integration
+* Add unit/integration test coverage
+* Add support for soft deletes
+
+---
+
+## 🧠 Developer Notes
+
+* Redis is used for caching hubs and SKUs for faster validations
+* All logs and errors are i18n-enabled for future multi-locale support
+* Configuration can be toggled via local YAML or AWS AppConfig
+* Swagger comments are generated using `swag init`
+
+---
+
+## 🔗 External Dependencies
+
+* [go\_commons](https://github.com/omniful/go_commons)
+* [GORM](https://gorm.io)
+* [PostgreSQL Go Driver](https://github.com/lib/pq)
+* [swaggo/gin-swagger](https://github.com/swaggo/gin-swagger)
 
 ---
 
