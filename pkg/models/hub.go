@@ -14,6 +14,8 @@ import (
 	"gorm.io/gorm"
 )
 
+type HubModel struct{}
+
 type Hub struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
 	Name      string    `gorm:"not null" json:"name"`
@@ -27,12 +29,24 @@ func getDB(ctx context.Context) *gorm.DB {
 	return configs.GetDB().GetMasterDB(ctx)
 }
 
+// GetHubs
+
+func (h HubModel) GetAllHubs(ctx context.Context) ([]Hub, error) {
+	return GetHubs(ctx)
+}
+
 func GetHubs(ctx context.Context) ([]Hub, error) {
 	var hubs []Hub
 	if err := getDB(ctx).Find(&hubs).Error; err != nil {
 		return nil, err
 	}
 	return hubs, nil
+}
+
+// GetHub
+
+func (h HubModel) GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
+	return GetHub(ctx, id)
 }
 
 func GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
@@ -63,6 +77,8 @@ func GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
 
 	return &hub, nil
 }
+
+// CreateHub
 
 func CreateHub(ctx context.Context, hub *Hub) error {
 	// Check if tenant exists before creating hub

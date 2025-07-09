@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
@@ -11,6 +12,20 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetHubs
+
+type HubFetcher interface {
+	GetAllHubs(ctx context.Context) ([]models.Hub, error)
+}
+
+func getHubsLogic(service HubFetcher) ([]models.Hub, int) {
+	hubs, err := service.GetAllHubs(context.Background())
+	if err != nil {
+		return nil, int(http.StatusInternalServerError)
+	}
+	return hubs, int(http.StatusOK)
+}
+
 // GetHubs godoc
 // @Summary Get all hubs
 // @Tags Hubs
@@ -19,13 +34,33 @@ import (
 // @Success 200 {array} models.Hub
 // @Router /hubs [get]
 func GetHubs(c *gin.Context) {
-	hubs, err := models.GetHubs(c)
-	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+	hubs, status := getHubsLogic(models.HubModel{})
+
+	if status != int(http.StatusOK) {
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to fetch hubs")})
 		return
 	}
+	c.JSON(status, hubs)
+}
 
-	c.JSON(int(http.StatusOK), hubs)
+// GetHub
+
+type HubService interface {
+	GetHub(ctx context.Context, id uuid.UUID) (*models.Hub, error)
+}
+
+func getHubByIDLogic(service HubService, idStr string) (*models.Hub, int) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, int(http.StatusBadRequest)
+	}
+
+	hub, err := service.GetHub(context.Background(), id)
+	if err != nil {
+		return nil, int(http.StatusInternalServerError)
+	}
+
+	return hub, int(http.StatusOK)
 }
 
 // GetHubByID godoc
@@ -39,20 +74,21 @@ func GetHubs(c *gin.Context) {
 func GetHubByID(c *gin.Context) {
 	idStr := c.Param("id")
 
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid hub ID")})
-		return
-	}
+	hub, status := getHubByIDLogic(models.HubModel{}, idStr)
 
-	hub, err := models.GetHub(c, id)
-	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+	if status != int(http.StatusOK) {
+		msg := "Error fetching hub"
+		if status == int(http.StatusBadRequest) {
+			msg = "Invalid hub ID"
+		}
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, msg)})
 		return
 	}
 
 	c.JSON(int(http.StatusOK), hub)
 }
+
+// CreateHub
 
 // CreateHub godoc
 // @Summary Create a new hub
