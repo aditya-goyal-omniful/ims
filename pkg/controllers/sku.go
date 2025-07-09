@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
@@ -10,6 +11,38 @@ import (
 	"github.com/omniful/go_commons/i18n"
 	"gorm.io/gorm"
 )
+
+// GetSkus
+
+type SkuFetcher interface {
+	GetFilteredSkus(ctx context.Context, tenantID, sellerID uuid.UUID, skuCodes []string) ([]models.Sku, error)
+}
+
+func getSkusLogic(service SkuFetcher, tenantIDStr, sellerIDStr string, skuCodes []string) ([]models.Sku, int, error) {
+	if tenantIDStr == "" {
+		return nil, int(http.StatusBadRequest), errors.New("missing X-Tenant-ID header")
+	}
+
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		return nil, int(http.StatusBadRequest), errors.New("invalid tenant_id in header")
+	}
+
+	var sellerID uuid.UUID
+	if sellerIDStr != "" {
+		sellerID, err = uuid.Parse(sellerIDStr)
+		if err != nil {
+			return nil, int(http.StatusBadRequest), errors.New("invalid seller_id")
+		}
+	}
+
+	skus, err := service.GetFilteredSkus(context.Background(), tenantID, sellerID, skuCodes)
+	if err != nil {
+		return nil, int(http.StatusInternalServerError), err
+	}
+
+	return skus, int(http.StatusOK), nil
+}
 
 // GetSkus godoc
 // @Summary Get all SKUs (with optional filters)
@@ -21,39 +54,37 @@ import (
 // @Success 200 {array} models.Sku
 // @Router /skus [get]
 func GetSkus(c *gin.Context) {
-	// Extract tenant ID from auth headers
 	tenantIDStr := c.GetHeader("X-Tenant-ID")
-	if tenantIDStr == "" {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Missing X-Tenant-ID header")})
-		return
-	}
-
-	tenantID, err := uuid.Parse(tenantIDStr)
-	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid tenant_id in header")})
-		return
-	}
-
-	// Optional filters
 	sellerIDStr := c.Query("seller_id")
-	skuCodes := c.QueryArray("sku_codes") // Supports ?sku_codes=abc&sku_codes=def
+	skuCodes := c.QueryArray("sku_codes")
 
-	var sellerID uuid.UUID
-	if sellerIDStr != "" {
-		sellerID, err = uuid.Parse(sellerIDStr)
-		if err != nil {
-			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid seller_id")})
-			return
-		}
-	}
-
-	skus, err := models.GetFilteredSkus(c, tenantID, sellerID, skuCodes)
+	skus, status, err := getSkusLogic(models.SKUModel{}, tenantIDStr, sellerIDStr, skuCodes)
 	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(int(http.StatusOK), skus)
+	c.JSON(status, skus)
+}
+
+// GetSkuByID
+
+type SkuGetter interface {
+	GetSku(ctx context.Context, id uuid.UUID) (*models.Sku, error)
+}
+
+func getSkuByIDLogic(service SkuGetter, idStr string) (*models.Sku, int, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, int(http.StatusBadRequest), errors.New("invalid SKU ID")
+	}
+
+	sku, err := service.GetSku(context.Background(), id)
+	if err != nil {
+		return nil, int(http.StatusInternalServerError), err
+	}
+
+	return sku, int(http.StatusOK), nil
 }
 
 // GetSkuByID godoc
@@ -67,19 +98,40 @@ func GetSkus(c *gin.Context) {
 func GetSkuByID(c *gin.Context) {
 	idStr := c.Param("id")
 
-	id, err := uuid.Parse(idStr)
+	sku, status, err := getSkuByIDLogic(models.SKUModel{}, idStr)
 	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Sku ID")})
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	Sku, err := models.GetSku(c, id)
-	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
-		return
+	c.JSON(status, sku)
+}
+
+// CreateSku
+
+type SkuCreator interface {
+	CreateSku(ctx context.Context, sku *models.Sku) error
+}
+
+func createSkuLogic(service SkuCreator, tenantIDStr string, sku *models.Sku) (int, error) {
+	if tenantIDStr == "" {
+		return int(http.StatusBadRequest), errors.New("missing X-Tenant-ID header")
 	}
 
-	c.JSON(int(http.StatusOK), Sku)
+	tenantID, err := uuid.Parse(tenantIDStr)
+	if err != nil {
+		return int(http.StatusBadRequest), errors.New("invalid tenant_id in header")
+	}
+	sku.TenantID = tenantID
+
+	if err := service.CreateSku(context.Background(), sku); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return int(http.StatusBadRequest), errors.New("tenant or seller not found")
+		}
+		return int(http.StatusInternalServerError), errors.New("failed to create sku")
+	}
+
+	return int(http.StatusCreated), nil
 }
 
 // CreateSku godoc
@@ -94,33 +146,38 @@ func GetSkuByID(c *gin.Context) {
 func CreateSku(c *gin.Context) {
 	var sku models.Sku
 
-	err := c.Bind(&sku)
-	if err != nil {
+	if err := c.Bind(&sku); err != nil {
 		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
-	// Extract tenant_id from header and assign to hub
-	tenantIDStr := c.GetHeader("X-Tenant-ID")
-	if tenantIDStr != "" {
-		tenantID, err := uuid.Parse(tenantIDStr)
-		if err != nil {
-			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid tenant_id in header")})
-			return
-		}
-		sku.TenantID = tenantID
-	}
-
-	if err := models.CreateSku(c, &sku); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant or Seller not found")})
-			return
-		}
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to create sku")})
+	status, err := createSkuLogic(models.SKUModel{}, c.GetHeader("X-Tenant-ID"), &sku)
+	if err != nil {
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(int(http.StatusCreated), sku)
+	c.JSON(status, sku)
+}
+
+// DeleteSku
+
+type SkuDeleter interface {
+	DeleteSku(ctx context.Context, id uuid.UUID) (*models.Sku, error)
+}
+
+func deleteSkuLogic(service SkuDeleter, idStr string) (*models.Sku, int, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, int(http.StatusBadRequest), errors.New("invalid sku id")
+	}
+
+	sku, err := service.DeleteSku(context.Background(), id)
+	if err != nil {
+		return nil, int(http.StatusNotFound), errors.New("sku not found")
+	}
+
+	return sku, int(http.StatusOK), nil
 }
 
 // DeleteSku godoc
@@ -133,20 +190,49 @@ func CreateSku(c *gin.Context) {
 // @Router /skus/{id} [delete]
 func DeleteSku(c *gin.Context) {
 	idStr := c.Param("id")
-	
+
+	sku, status, err := deleteSkuLogic(models.SKUModel{}, idStr)
+	if err != nil {
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+		return
+	}
+
+	c.JSON(status, sku)
+}
+
+// UpdateSku
+
+type SkuUpdater interface {
+	UpdateSku(ctx context.Context, id uuid.UUID, updated *models.Sku) error
+	GetSku(ctx context.Context, id uuid.UUID) (*models.Sku, error)
+	GetTenant(ctx context.Context, id uuid.UUID) (*models.Tenant, error)
+}
+
+func updateSkuLogic(service SkuUpdater, idStr string, sku *models.Sku) (*models.Sku, int, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Sku ID")})
-		return
+		return nil, int(http.StatusBadRequest), errors.New("invalid sku id")
 	}
 
-	sku, err := models.DeleteSku(c, id)
+	if sku.TenantID != uuid.Nil {
+		if _, err := service.GetTenant(context.Background(), sku.TenantID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, int(http.StatusBadRequest), errors.New("tenant not found")
+			}
+			return nil, int(http.StatusInternalServerError), errors.New("failed to validate tenant")
+		}
+	}
+
+	if err := service.UpdateSku(context.Background(), id, sku); err != nil {
+		return nil, int(http.StatusInternalServerError), err
+	}
+
+	updated, err := service.GetSku(context.Background(), id)
 	if err != nil {
-		c.JSON(int(http.StatusNotFound), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Sku not found")})
-		return
+		return nil, int(http.StatusInternalServerError), err
 	}
 
-	c.JSON(int(http.StatusOK), sku)
+	return updated, int(http.StatusOK), nil
 }
 
 // UpdateSku godoc
@@ -162,36 +248,17 @@ func DeleteSku(c *gin.Context) {
 func UpdateSku(c *gin.Context) {
 	idStr := c.Param("id")
 
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Sku ID")})
-		return
-	}
-
 	var sku models.Sku
-	err = c.Bind(&sku)
-	if err != nil {
+	if err := c.Bind(&sku); err != nil {
 		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
-	if sku.TenantID != uuid.Nil {
-		if _, err := models.GetTenant(c, sku.TenantID); err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
-				return
-			}
-			c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to validate tenant")})
-			return
-		}
-	}
-
-	err = models.UpdateSku(c, id, &sku)
+	updated, status, err := updateSkuLogic(models.SKUModel{}, idStr, &sku)
 	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	updated, _ := models.GetSku(c, id)
-	c.JSON(int(http.StatusOK), updated)
+	c.JSON(status, updated)
 }

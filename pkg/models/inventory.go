@@ -25,6 +25,14 @@ type InventoryView struct {
 	Quantity int       `json:"quantity"`
 }
 
+type InventoryModel struct{}
+
+// GetInventories
+
+func (i InventoryModel) GetInventories(ctx context.Context) ([]Inventory, error) {
+	return GetInventories(ctx)
+}
+
 func GetInventories(ctx context.Context) ([]Inventory, error) {
 	var inventories []Inventory
 	if err := getDB(ctx).Find(&inventories).Error; err != nil {
@@ -33,12 +41,24 @@ func GetInventories(ctx context.Context) ([]Inventory, error) {
 	return inventories, nil
 }
 
+// GetInventoryByID
+
+func (i InventoryModel) GetInventory(ctx context.Context, id uuid.UUID) (*Inventory, error) {
+	return GetInventory(ctx, id)
+}
+
 func GetInventory(ctx context.Context, id uuid.UUID) (*Inventory, error) {
 	var inventory Inventory
 	if err := getDB(ctx).First(&inventory, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &inventory, nil
+}
+
+// CreateInventory
+
+func (i InventoryModel) CreateInventory(ctx context.Context, inv *Inventory) error {
+	return CreateInventory(ctx, inv)
 }
 
 func CreateInventory(ctx context.Context, inventory *Inventory) error {
@@ -54,21 +74,39 @@ func CreateInventory(ctx context.Context, inventory *Inventory) error {
 	return nil
 }
 
-func DeleteInventory(ctx context.Context, id uuid.UUID) (Inventory, error) {
+// DeleteInventory
+
+func (i InventoryModel) DeleteInventory(ctx context.Context, id uuid.UUID) (*Inventory, error) {
+	return DeleteInventory(ctx, id)
+}
+
+func DeleteInventory(ctx context.Context, id uuid.UUID) (*Inventory, error) {
 	var inventory Inventory
 	if err := getDB(ctx).First(&inventory, "id = ?", id).Error; err != nil {
-		return Inventory{}, err
+		return nil, err
 	}
 
 	if err := getDB(ctx).Delete(&inventory).Error; err != nil {
-		return inventory, err
+		return nil, err
 	}
 
-	return inventory, nil
+	return &inventory, nil
+}
+
+// UpdateInventory
+
+func (i InventoryModel) UpdateInventory(ctx context.Context, id uuid.UUID, updated *Inventory) error {
+	return UpdateInventory(ctx, id, updated)
 }
 
 func UpdateInventory(ctx context.Context, id uuid.UUID, updated *Inventory) error {
 	return getDB(ctx).Model(&Inventory{}).Where("id = ?", id).Updates(updated).Error
+}
+
+// UpsertInventory
+
+func (i InventoryModel) UpsertInventory(ctx context.Context, inv *Inventory) error {
+	return UpsertInventory(ctx, inv)
 }
 
 func UpsertInventory(ctx context.Context, inventory *Inventory) error {
@@ -84,6 +122,12 @@ func UpsertInventory(ctx context.Context, inventory *Inventory) error {
 		Columns:   []clause.Column{{Name: "sku_id"}, {Name: "hub_id"}}, // conflict target
 		DoUpdates: clause.AssignmentColumns([]string{"quantity", "updated_at"}),
 	}).Create(inventory).Error
+}
+
+// GetInventoryWithDefaults
+
+func (i InventoryModel) GetInventoryWithDefaults(ctx context.Context, tenantID, hubID uuid.UUID) ([]InventoryView, error) {
+	return GetInventoryWithDefaults(ctx, tenantID, hubID)
 }
 
 func GetInventoryWithDefaults(ctx context.Context, tenantID, hubID uuid.UUID) ([]InventoryView, error) {
@@ -105,6 +149,8 @@ func GetInventoryWithDefaults(ctx context.Context, tenantID, hubID uuid.UUID) ([
 	return result, err
 }
 
+// GetInventoryBySkuHub
+
 func GetInventoryBySkuHub(ctx context.Context, skuID, hubID uuid.UUID) (*Inventory, error) {
 	var inv Inventory
 	err := getDB(ctx).Where("sku_id = ? AND hub_id = ?", skuID, hubID).First(&inv).Error
@@ -112,6 +158,16 @@ func GetInventoryBySkuHub(ctx context.Context, skuID, hubID uuid.UUID) (*Invento
 		return nil, err
 	}
 	return &inv, nil
+}
+
+// UpdateInventoryQuantity
+
+func (m InventoryModel) GetInventoryBySkuHub(ctx context.Context, skuID, hubID uuid.UUID) (*Inventory, error) {
+	return GetInventoryBySkuHub(ctx, skuID, hubID)
+}
+
+func (m InventoryModel) UpdateInventoryQuantity(ctx context.Context, invID uuid.UUID, newQty int) error {
+	return UpdateInventoryQuantity(ctx, invID, newQty)
 }
 
 func UpdateInventoryQuantity(ctx context.Context, id uuid.UUID, quantity int) error {

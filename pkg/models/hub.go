@@ -43,7 +43,7 @@ func GetHubs(ctx context.Context) ([]Hub, error) {
 	return hubs, nil
 }
 
-// GetHub
+// GetHubById
 
 func (h HubModel) GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
 	return GetHub(ctx, id)
@@ -80,6 +80,10 @@ func GetHub(ctx context.Context, id uuid.UUID) (*Hub, error) {
 
 // CreateHub
 
+func (h HubModel) CreateHub(ctx context.Context, hub *Hub) error {
+	return CreateHub(ctx, hub)
+}
+
 func CreateHub(ctx context.Context, hub *Hub) error {
 	// Check if tenant exists before creating hub
 	_, err := GetTenant(ctx, hub.TenantID)
@@ -91,6 +95,12 @@ func CreateHub(ctx context.Context, hub *Hub) error {
 		return err
 	}
 	return nil
+}
+
+// DeleteHub
+
+func (h HubModel) DeleteHub(ctx context.Context, id uuid.UUID) (Hub, error) {
+	return DeleteHub(ctx, id)
 }
 
 func DeleteHub(ctx context.Context, id uuid.UUID) (Hub, error) {
@@ -107,6 +117,12 @@ func DeleteHub(ctx context.Context, id uuid.UUID) (Hub, error) {
 	_, _ = configs.RedisClient.Del(ctx, fmt.Sprintf("hub:%s", id))
 
 	return hub, nil
+}
+
+// UpdateHub
+
+func (h HubModel) UpdateHub(ctx context.Context, id uuid.UUID, updated *Hub) error {
+	return UpdateHub(ctx, id, updated)
 }
 
 func UpdateHub(ctx context.Context, id uuid.UUID, updated *Hub) error {

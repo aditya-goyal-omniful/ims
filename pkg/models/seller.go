@@ -16,6 +16,13 @@ type Seller struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type SellerModel struct{}
+
+// GetSellers
+
+func (s SellerModel) GetSellers(ctx context.Context) ([]Seller, error) {
+	return GetSellers(ctx)
+}
 
 func GetSellers(ctx context.Context) ([]Seller, error) {
 	var sellers []Seller
@@ -25,12 +32,24 @@ func GetSellers(ctx context.Context) ([]Seller, error) {
 	return sellers, nil
 }
 
+// GetSellerByID
+
+func (s SellerModel) GetSeller(ctx context.Context, id uuid.UUID) (*Seller, error) {
+	return GetSeller(ctx, id)
+}
+
 func GetSeller(ctx context.Context, id uuid.UUID) (*Seller, error) {
 	var seller Seller
 	if err := getDB(ctx).First(&seller, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &seller, nil
+}
+
+// CreateSeller
+
+func (s SellerModel) CreateSeller(ctx context.Context, seller *Seller) error {
+	return CreateSeller(ctx, seller)
 }
 
 func CreateSeller(ctx context.Context, seller *Seller) error {
@@ -46,6 +65,21 @@ func CreateSeller(ctx context.Context, seller *Seller) error {
 	return nil
 }
 
+// DeleteSeller
+
+func (s SellerModel) DeleteSeller(ctx context.Context, id uuid.UUID) (*Seller, error) {
+	seller, err := GetSeller(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := getDB(ctx).Delete(seller).Error; err != nil {
+		return nil, err
+	}
+
+	return seller, nil
+}
+
 func DeleteSeller(ctx context.Context, id uuid.UUID) (Seller, error) {
 	var seller Seller
 	if err := getDB(ctx).First(&seller, "id = ?", id).Error; err != nil {
@@ -57,6 +91,16 @@ func DeleteSeller(ctx context.Context, id uuid.UUID) (Seller, error) {
 	}
 
 	return seller, nil
+}
+
+// UpdateSeller
+
+func (s SellerModel) UpdateSeller(ctx context.Context, id uuid.UUID, seller *Seller) error {
+	return UpdateSeller(ctx, id, seller)
+}
+
+func (s SellerModel) GetTenant(ctx context.Context, id uuid.UUID) (*Tenant, error) {
+	return GetTenant(ctx, id)
 }
 
 func UpdateSeller(ctx context.Context, id uuid.UUID, updated *Seller) error {

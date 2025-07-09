@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"context"
+	"errors"
+
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -8,6 +11,29 @@ import (
 	"github.com/omniful/go_commons/i18n"
 	"github.com/omniful/go_commons/log"
 )
+
+type Validator interface {
+	ValidateHubAndSku(ctx context.Context, hubID, skuID uuid.UUID) (bool, error)
+}
+
+func validateOrderLogic(service Validator, hubIDStr, skuIDStr string) (bool, int, error) {
+	hubID, err := uuid.Parse(hubIDStr)
+	if err != nil {
+		return false, int(http.StatusBadRequest), errors.New("invalid hub_id")
+	}
+
+	skuID, err := uuid.Parse(skuIDStr)
+	if err != nil {
+		return false, int(http.StatusBadRequest), errors.New("invalid sku_id")
+	}
+
+	isValid, err := service.ValidateHubAndSku(context.Background(), hubID, skuID)
+	if err != nil {
+		return false, int(http.StatusInternalServerError), errors.New("validation failed")
+	}
+
+	return isValid, int(http.StatusOK), nil
+}
 
 // ValidateOrder godoc
 // @Summary Validate hub and SKU IDs
@@ -18,25 +44,17 @@ import (
 // @Success 200 {object} map[string]bool
 // @Router /validators/validate_order/{hub_id}/{sku_id} [get]
 func ValidateOrder(c *gin.Context) {
-	log.Infof(i18n.Translate(c, "Received validate request for hubID=%s skuID=%s"), c.Param("hub_id"), c.Param("sku_id"))
-
 	hubIDStr := c.Param("hub_id")
 	skuIDStr := c.Param("sku_id")
 
-	hubID, err1 := uuid.Parse(hubIDStr)
-	skuID, err2 := uuid.Parse(skuIDStr)
+	log.Infof(i18n.Translate(c, "Received validate request for hubID=%s skuID=%s"), hubIDStr, skuIDStr)
 
-	if err1 != nil || err2 != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid hub_id or sku_id")})
-		return
-	}
-
-	isValid, err := models.ValidateHubAndSku(c, hubID, skuID)
+	isValid, status, err := validateOrderLogic(models.InventoryModel{}, hubIDStr, skuIDStr)
 	if err != nil {
 		log.Errorf("Validation failed: %v", err)
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Internal server error")})
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(int(http.StatusOK), gin.H{i18n.Translate(c, "is_valid"): isValid})
+	c.JSON(status, gin.H{i18n.Translate(c, "is_valid"): isValid})
 }

@@ -21,12 +21,22 @@ type Sku struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
+type SKUModel struct{}
+
+// GetSkus
+
 func GetSkus(ctx context.Context) ([]Sku, error) {
 	var skus []Sku
 	if err := getDB(ctx).Find(&skus).Error; err != nil {
 		return nil, err
 	}
 	return skus, nil
+}
+
+// GetSkuByID
+
+func (s SKUModel) GetSku(ctx context.Context, id uuid.UUID) (*Sku, error) {
+	return GetSku(ctx, id)
 }
 
 func GetSku(ctx context.Context, id uuid.UUID) (*Sku, error) {
@@ -55,6 +65,12 @@ func GetSku(ctx context.Context, id uuid.UUID) (*Sku, error) {
 	return &sku, nil
 }
 
+// CreateSku
+
+func (s SKUModel) CreateSku(ctx context.Context, sku *Sku) error {
+	return CreateSku(ctx, sku)
+}
+
 func CreateSku(ctx context.Context, sku *Sku) error {
 	// Check if tenant exists before creating sku
 	_, err := GetTenant(ctx, sku.TenantID)
@@ -74,20 +90,36 @@ func CreateSku(ctx context.Context, sku *Sku) error {
 	return nil
 }
 
-func DeleteSku(ctx context.Context, id uuid.UUID) (Sku, error) {
+// DeleteSku
+
+func (s SKUModel) DeleteSku(ctx context.Context, id uuid.UUID) (*Sku, error) {
+	return DeleteSku(ctx, id)
+}
+
+func DeleteSku(ctx context.Context, id uuid.UUID) (*Sku, error) {
 	var sku Sku
 	if err := getDB(ctx).First(&sku, "id = ?", id).Error; err != nil {
-		return Sku{}, err
+		return nil, err
 	}
 
 	if err := getDB(ctx).Delete(&sku).Error; err != nil {
-		return sku, err
+		return nil, err
 	}
 
 	// Invalidate cache
 	_, _ = configs.RedisClient.Del(ctx, fmt.Sprintf("sku:%s", id))
 
-	return sku, nil
+	return &sku, nil
+}
+
+// UpdateSku
+
+func (s SKUModel) UpdateSku(ctx context.Context, id uuid.UUID, updated *Sku) error {
+	return UpdateSku(ctx, id, updated)
+}
+
+func (s SKUModel) GetTenant(ctx context.Context, id uuid.UUID) (*Tenant, error) {
+	return GetTenant(ctx, id)
 }
 
 func UpdateSku(ctx context.Context, id uuid.UUID, updated *Sku) error {
@@ -97,6 +129,12 @@ func UpdateSku(ctx context.Context, id uuid.UUID, updated *Sku) error {
 	_, _ = configs.RedisClient.Del(ctx, fmt.Sprintf("sku:%s", id))
 
 	return err
+}
+
+// GetFilteredSkus
+
+func (s SKUModel) GetFilteredSkus(ctx context.Context, tenantID, sellerID uuid.UUID, skuCodes []string) ([]Sku, error) {
+	return GetFilteredSkus(ctx, tenantID, sellerID, skuCodes)
 }
 
 func GetFilteredSkus(ctx context.Context, tenantID uuid.UUID, sellerID uuid.UUID, skuCodes []string) ([]Sku, error) {

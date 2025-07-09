@@ -11,6 +11,10 @@ import (
 	"github.com/omniful/go_commons/log"
 )
 
+func (m InventoryModel) ValidateHubAndSku(ctx context.Context, hubID, skuID uuid.UUID) (bool, error) {
+	return ValidateHubAndSku(ctx, hubID, skuID)
+}
+
 func ValidateHubAndSku(ctx context.Context, hubID, skuID uuid.UUID) (bool, error) {
 	hubKey := fmt.Sprintf("hub_valid:%s", hubID)
 	skuKey := fmt.Sprintf("sku_valid:%s", skuID)

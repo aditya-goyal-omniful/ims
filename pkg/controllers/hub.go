@@ -43,7 +43,7 @@ func GetHubs(c *gin.Context) {
 	c.JSON(status, hubs)
 }
 
-// GetHub
+// GetHubByID
 
 type HubService interface {
 	GetHub(ctx context.Context, id uuid.UUID) (*models.Hub, error)
@@ -90,6 +90,32 @@ func GetHubByID(c *gin.Context) {
 
 // CreateHub
 
+type HubCreator interface {
+	CreateHub(ctx context.Context, hub *models.Hub) error
+}
+
+func createHubLogic(service HubCreator, tenantIDStr string, hub *models.Hub) (int, error) {
+	// Parse tenant ID
+	if tenantIDStr != "" {
+		tenantID, err := uuid.Parse(tenantIDStr)
+		if err != nil {
+			return int(http.StatusBadRequest), errors.New("invalid tenant_id")
+		}
+		hub.TenantID = tenantID
+	}
+
+	// Create hub
+	err := service.CreateHub(context.Background(), hub)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return int(http.StatusBadRequest), errors.New("tenant not found")
+		}
+		return int(http.StatusInternalServerError), errors.New("failed to create hub")
+	}
+
+	return int(http.StatusCreated), nil
+}
+
 // CreateHub godoc
 // @Summary Create a new hub
 // @Tags Hubs
@@ -102,33 +128,38 @@ func GetHubByID(c *gin.Context) {
 func CreateHub(c *gin.Context) {
 	var hub models.Hub
 
-	err := c.Bind(&hub)
-	if err != nil {
+	if err := c.Bind(&hub); err != nil {
 		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
-	// Extract tenant_id from header and assign to hub
-	tenantIDStr := c.GetHeader("X-Tenant-ID")
-	if tenantIDStr != "" {
-		tenantID, err := uuid.Parse(tenantIDStr)
-		if err != nil {
-			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid tenant_id in header")})
-			return
-		}
-		hub.TenantID = tenantID
-	}
-
-	if err := models.CreateHub(c, &hub); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
-			return
-		}
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to create hub")})
+	status, err := createHubLogic(models.HubModel{}, c.GetHeader("X-Tenant-ID"), &hub)
+	if err != nil {
+		c.JSON(int(status), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(int(http.StatusCreated), hub)
+	c.JSON(int(status), hub)
+}
+
+// DeleteHub
+
+type HubDeleter interface {
+	DeleteHub(ctx context.Context, id uuid.UUID) (models.Hub, error)
+}
+
+func deleteHubLogic(service HubDeleter, idStr string) (models.Hub, int, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return models.Hub{}, int(http.StatusBadRequest), errors.New("invalid hub id")
+	}
+
+	hub, err := service.DeleteHub(context.Background(), id)
+	if err != nil {
+		return models.Hub{}, int(http.StatusNotFound), errors.New("hub not found")
+	}
+
+	return hub, int(http.StatusOK), nil
 }
 
 // DeleteHub godoc
@@ -140,21 +171,49 @@ func CreateHub(c *gin.Context) {
 // @Success 200 {object} models.Hub
 // @Router /hubs/{id} [delete]
 func DeleteHub(c *gin.Context) {
-	idStr := c.Param("id")
-	
+	hub, status, err := deleteHubLogic(models.HubModel{}, c.Param("id"))
+	if err != nil {
+		c.JSON(int(status), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+		return
+	}
+	c.JSON(int(status), hub)
+}
+
+// UpdateHub
+
+func updateHubLogic(
+	ctx context.Context,
+	tenantService TenantService,
+	updateFunc func(ctx context.Context, id uuid.UUID, hub *models.Hub) error,
+	getFunc func(ctx context.Context, id uuid.UUID) (*models.Hub, error),
+	idStr string,
+	input models.Hub,
+) (*models.Hub, int) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid hub ID")})
-		return
+		return nil, int(http.StatusBadRequest)
 	}
 
-	hub, err := models.DeleteHub(c, id)
+	if input.TenantID != uuid.Nil && tenantService != nil {
+		_, err := tenantService.GetTenant(ctx, input.TenantID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, int(http.StatusBadRequest)
+			}
+			return nil, int(http.StatusInternalServerError)
+		}
+	}
+
+	if err := updateFunc(ctx, id, &input); err != nil {
+		return nil, int(http.StatusInternalServerError)
+	}
+
+	updated, err := getFunc(ctx, id)
 	if err != nil {
-		c.JSON(int(http.StatusNotFound), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Hub not found")})
-		return
+		return nil, int(http.StatusInternalServerError)
 	}
 
-	c.JSON(int(http.StatusOK), hub)
+	return updated, int(http.StatusOK)
 }
 
 // UpdateHub godoc
@@ -170,36 +229,30 @@ func DeleteHub(c *gin.Context) {
 func UpdateHub(c *gin.Context) {
 	idStr := c.Param("id")
 
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid hub ID")})
-		return
-	}
-
 	var hub models.Hub
-	err = c.Bind(&hub)
+	err := c.Bind(&hub)
 	if err != nil {
 		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
-	if hub.TenantID != uuid.Nil {
-		if _, err := models.GetTenant(c, hub.TenantID); err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
-				return
-			}
-			c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to validate tenant")})
-			return
-		}
-	}
+	result, status := updateHubLogic(
+		c,
+		models.TenantModel{},
+		models.UpdateHub,
+		models.GetHub,
+		idStr,
+		hub,
+	)
 
-	err = models.UpdateHub(c, id, &hub)
-	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+		if status != int(http.StatusOK) {
+		msg := "Failed to update hub"
+		if status == int(http.StatusBadRequest) {
+			msg = "Invalid hub ID or tenant not found"
+		}
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, msg)})
 		return
 	}
 
-	updated, _ := models.GetHub(c, id)
-	c.JSON(int(http.StatusOK), updated)
+	c.JSON(int(http.StatusOK), result)
 }

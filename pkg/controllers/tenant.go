@@ -1,12 +1,28 @@
 package controllers
 
 import (
+	"context"
+
 	"github.com/aditya-goyal-omniful/ims/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/omniful/go_commons/http"
 	"github.com/omniful/go_commons/i18n"
 )
+
+// GetHubs
+
+type TenantFetcher interface {
+	GetAllTenants(ctx context.Context) ([]models.Tenant, error)
+}
+
+func getTenantsLogic(service TenantFetcher) ([]models.Tenant, int) {
+	tenants, err := service.GetAllTenants(context.Background())
+	if err != nil {
+		return nil, int(http.StatusInternalServerError)
+	}
+	return tenants, int(http.StatusOK)
+}
 
 // GetTenants godoc
 // @Summary Get all tenants
@@ -15,13 +31,33 @@ import (
 // @Success 200 {array} models.Tenant
 // @Router /tenants [get]
 func GetTenants(c *gin.Context) {
-	Tenants, err := models.GetTenants(c)
-	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+	tenants, status := getTenantsLogic(models.TenantModel{})
+
+	if status != int(http.StatusOK) {
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Failed to fetch tenants")})
 		return
 	}
+	c.JSON(status, tenants)
+}
 
-	c.JSON(int(http.StatusOK), Tenants)
+// GetTenantByID
+
+type TenantService interface {
+	GetTenant(ctx context.Context, id uuid.UUID) (*models.Tenant, error)
+}
+
+func getTenantByIDLogic(service TenantService, idStr string) (*models.Tenant, int) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, int(http.StatusBadRequest)
+	}
+
+	tenant, err := service.GetTenant(context.Background(), id)
+	if err != nil {
+		return nil, int(http.StatusInternalServerError)
+	}
+
+	return tenant, int(http.StatusOK)
 }
 
 // GetTenantByID godoc
@@ -35,19 +71,32 @@ func GetTenants(c *gin.Context) {
 func GetTenantByID(c *gin.Context) {
 	idStr := c.Param("id")
 
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Tenant ID")})
+	tenant, status := getTenantByIDLogic(models.TenantModel{}, idStr)
+
+	if status != int(http.StatusOK) {
+		msg := "Error fetching tenant"
+		if status == int(http.StatusBadRequest) {
+			msg = "Invalid tenant ID"
+		}
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, msg)})
 		return
 	}
 
-	Tenant, err := models.GetTenant(c, id)
-	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
-		return
-	}
+	c.JSON(int(http.StatusOK), tenant)
+}
 
-	c.JSON(int(http.StatusOK), Tenant)
+// CreateTenant
+
+type TenantCreator interface {
+	CreateTenant(ctx context.Context, tenant *models.Tenant) error
+}
+
+func createTenantLogic(service TenantCreator, tenant *models.Tenant) (int, error) {
+	err := service.CreateTenant(context.Background(), tenant)
+	if err != nil {
+		return int(http.StatusInternalServerError), err
+	}
+	return int(http.StatusCreated), nil
 }
 
 // CreateTenant godoc
@@ -59,22 +108,42 @@ func GetTenantByID(c *gin.Context) {
 // @Success 201 {object} models.Tenant
 // @Router /tenants [post]
 func CreateTenant(c *gin.Context) {
-	var Tenant models.Tenant
+	var tenant models.Tenant
 
-	err := c.Bind(&Tenant)
-	if err != nil {
+	if err := c.Bind(&tenant); err != nil {
 		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
-	err = models.CreateTenant(c, &Tenant)
+	status, err := createTenantLogic(models.TenantModel{}, &tenant)
 	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
 		return
 	}
 
-	c.JSON(int(http.StatusCreated), Tenant)
+	c.JSON(status, tenant)
 }
+
+// DeleteTenant
+
+type TenantDeleter interface {
+	DeleteTenant(ctx context.Context, id uuid.UUID) (models.Tenant, error)
+}
+
+func deleteTenantLogic(service TenantDeleter, idStr string) (models.Tenant, int, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return models.Tenant{}, int(http.StatusBadRequest), err
+	}
+
+	tenant, err := service.DeleteTenant(context.Background(), id)
+	if err != nil {
+		return models.Tenant{}, int(http.StatusNotFound), err
+	}
+
+	return tenant, int(http.StatusOK), nil
+}
+
 
 // DeleteTenant godoc
 // @Summary Delete tenant by ID
@@ -85,21 +154,46 @@ func CreateTenant(c *gin.Context) {
 // @Router /tenants/{id} [delete]
 func DeleteTenant(c *gin.Context) {
 	idStr := c.Param("id")
-	
+
+	tenant, status, err := deleteTenantLogic(models.TenantModel{}, idStr)
+	if err != nil {
+		msg := "Tenant not found"
+		if status == int(http.StatusBadRequest) {
+			msg = "Invalid Tenant ID"
+		}
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, msg)})
+		return
+	}
+
+	c.JSON(int(http.StatusOK), tenant)
+}
+
+// UpdateTenant
+
+type TenantUpdater interface {
+	UpdateTenant(ctx context.Context, id uuid.UUID, updated *models.Tenant) error
+	GetTenant(ctx context.Context, id uuid.UUID) (*models.Tenant, error)
+}
+
+func updateTenantLogic(service TenantUpdater, idStr string, updated *models.Tenant) (*models.Tenant, int, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Tenant ID")})
-		return
+		return nil, int(http.StatusBadRequest), err
 	}
 
-	Tenant, err := models.DeleteTenant(c, id)
+	err = service.UpdateTenant(context.Background(), id, updated)
 	if err != nil {
-		c.JSON(int(http.StatusNotFound), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Tenant not found")})
-		return
+		return nil, int(http.StatusInternalServerError), err
 	}
 
-	c.JSON(int(http.StatusOK), Tenant)
+	tenant, err := service.GetTenant(context.Background(), id)
+	if err != nil {
+		return nil, int(http.StatusInternalServerError), err
+	}
+
+	return tenant, int(http.StatusOK), nil
 }
+
 
 // UpdateTenant godoc
 // @Summary Update tenant by ID
@@ -113,25 +207,21 @@ func DeleteTenant(c *gin.Context) {
 func UpdateTenant(c *gin.Context) {
 	idStr := c.Param("id")
 
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid Tenant ID")})
-		return
-	}
-
-	var Tenant models.Tenant
-	err = c.Bind(&Tenant)
-	if err != nil {
+	var tenant models.Tenant
+	if err := c.Bind(&tenant); err != nil {
 		c.JSON(int(http.StatusBadRequest), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, "Invalid request body")})
 		return
 	}
 
-	err = models.UpdateTenant(c, id, &Tenant)
+	updatedTenant, status, err := updateTenantLogic(models.TenantModel{}, idStr, &tenant)
 	if err != nil {
-		c.JSON(int(http.StatusInternalServerError), gin.H{i18n.Translate(c, "error"): i18n.Translate(c, err.Error())})
+		msg := "Error updating tenant"
+		if status ==int(http.StatusBadRequest) {
+			msg = "Invalid Tenant ID"
+		}
+		c.JSON(status, gin.H{i18n.Translate(c, "error"): i18n.Translate(c, msg)})
 		return
 	}
 
-	updated, _ := models.GetTenant(c, id)
-	c.JSON(int(http.StatusOK), updated)
+	c.JSON(status, updatedTenant)
 }
